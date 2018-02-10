@@ -1,6 +1,6 @@
 import java.io.*;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashSet;
+
 
 public class Main {
 
@@ -18,7 +18,7 @@ public class Main {
 
 class Tree {
 
-  Set<Long> set = new TreeSet<Long>();
+  HashSet<Integer> set = new HashSet<Integer>();
   private final String fileNameIn = "input.txt";
   private final String fileNameOut = "output.txt";
   long res = 0;
@@ -27,7 +27,7 @@ class Tree {
     BufferedReader in = new BufferedReader(new FileReader(fileNameIn));
     String s;
     while ((s = in.readLine()) != null) {
-      set.add(Long.parseLong(s));
+      set.add(Integer.parseInt(s));
     }
     in.close();
   }
@@ -39,7 +39,7 @@ class Tree {
   }
 
   public void calculate() {
-    for (Long i: set) {
+    for (Integer i: set) {
       res += i;
     }
   }
