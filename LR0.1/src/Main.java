@@ -1,23 +1,23 @@
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
 
  static class Node {
     Node left;
     Node right;
-    Node parent;
     int value;
-    boolean marker;
 
-    Node (Node parent, int value) {
-      this.parent = parent;
+    Node (int value) {
       this.value = value;
+      System.out.println(String.format("+ %d", value));
     }
 
     @Override
@@ -34,20 +34,20 @@ public class Main {
   static ArrayList<Integer> lst = new ArrayList<Integer>();
   static Node root = null;
 
-  private static void readDataFromFile(String[] args) {
-    String fileNameInput = args.length > 0 ? args[0] : "input.txt";
-    List<String> list = null;
+
+  private static void readDataFromFile() {
+    ArrayList<Integer> list = new ArrayList<Integer>();
     try {
-      list = Files.readAllLines(Paths.get(fileNameInput));
-      //log(list.toString());
-    } catch (IOException e) {
+      Scanner sc = new Scanner(new File("input.txt"));
+      while (sc.hasNextInt()) {
+        list.add(sc.nextInt());
+      }
+    } catch (Exception e) {
       //log("error read from file");
       System.exit(2);
     }
-
-    for (String s : list) {
+    for (int value : list) {
       try {
-        int value = Integer.parseInt(s);
         if (!lst.contains(value)) {
           lst.add(value);
         }
@@ -61,73 +61,44 @@ public class Main {
 
   private static void fillTree() {
     for (Integer i: lst) {
-      addValueToBinaryTree(i);
+      addValueToBinaryTree(i, root);
     }
   }
 
-  private static void addValueToBinaryTree(int value) {
-    Node node = root;
-    Node parent = null;
-    if (node == null) {
-      root = new Node(null, value);
+  private static void addValueToBinaryTree(int value, Node node) {
+    if (node==null || root == null) {
+      root = new Node(value);
       return;
     }
-    while (true) {
-      parent = node;
-      boolean left = value < parent.value;
-      if (left) {
-        if (parent.left == null) {
-          parent.left = new Node(parent, value);
-          return;
-        }
-        node = parent.left;
-      } else { //right
-        if (parent.right == null) {
-          parent.right = new Node(parent, value);
-          return;
-        }
-        node = parent.right;
-      }
+    if (value<node.value) {
+      if (node.left != null)
+        addValueToBinaryTree(value, node.left);
+      else
+        node.left = new Node(value);
+    } else {
+      if (node.right != null)
+        addValueToBinaryTree(value, node.right);
+      else
+        node.right = new Node(value);
     }
   }
 
-  private static void directLeftBypassTree() {
-    lst.clear();
-    Node node = root;
-    int maxDeep = 0;
-    while (node != null) {
-      if (maxDeep++ > 100)
-        break;
-      if (node.marker && (
-        ((node.right!= null) && node.right.marker) ||
-        ((node.right == null) && (node.left != null) && node.left.marker) )
-        ) {
-        node = node.parent;
-        //log(String.format("   ^^ %s", node));
-        continue;
-      }
-      if (node.marker && (node.right != null) && !node.right.marker) {
-        node = node.right;
-        //log(String.format("   > %s", node));
-        continue;
-      }
+  private static void directLeftBypassTree(Node node) {
+    if (root == null)
+      return;
+    if (root == node)
       lst.add(node.value);
-      node.marker = true;
-      //log(String.format("+ %s", node));
-      if (node.left != null) {
-        node = node.left;
-        //log(String.format("   < %s", node));
-        continue;
-      }
-      if (node.right != null) {
-        node = node.right;
-        //log(String.format("   > %s", node));
-        continue;
-      }
-      node = node.parent;
-      //log(String.format("   ^ %s", node));
+    if (node.left != null) {
+      lst.add(node.left.value);
+      directLeftBypassTree(node.left);
+    }
+    if (node.right != null) {
+      lst.add(node.right.value);
+      directLeftBypassTree(node.right);
     }
   }
+
+
 
   private static void writeDataToFile() {
     try {
@@ -144,9 +115,10 @@ public class Main {
 
   public static void main(String[] args) {
     long l = System.currentTimeMillis() ;
-    readDataFromFile(args);
+    readDataFromFile();
     fillTree();
-    directLeftBypassTree();
+    lst.clear();
+    directLeftBypassTree(root);
     writeDataToFile();
     l = System.currentTimeMillis()  - l;
     //log(String.format("Size mem alloicated: %d M", Runtime.getRuntime().totalMemory()/1024/1024));
