@@ -2,10 +2,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -17,7 +14,7 @@ public class Main {
 
     Node (int value) {
       this.value = value;
-      System.out.println(String.format("+ %d", value));
+      //System.out.println(String.format("+ %d", value));
     }
 
     @Override
@@ -32,44 +29,37 @@ public class Main {
   }
 
   static ArrayList<Integer> lst = new ArrayList<Integer>();
-  static Node root = null;
 
+ static Node root = null;
+
+
+  private static void fillListRandom(String arg) {
+    int cnt = Integer.parseInt(arg);
+    for (int i=0; i<cnt; i++) {
+      int digit = (int) (Math.random() * 1000000);
+      addValueToBinaryTree(digit, root);
+    }
+  }
 
   private static void readDataFromFile() {
-    ArrayList<Integer> list = new ArrayList<Integer>();
     try {
       Scanner sc = new Scanner(new File("input.txt"));
       while (sc.hasNextInt()) {
-        list.add(sc.nextInt());
+        addValueToBinaryTree(sc.nextInt(), root);
       }
     } catch (Exception e) {
       //log("error read from file");
       System.exit(2);
     }
-    for (int value : list) {
-      try {
-        if (!lst.contains(value)) {
-          lst.add(value);
-        }
-      } catch (Exception e) {
-        log("error in parsing string to int");
-        System.exit(3);
-      }
     }
-    log(lst.toString());
-  }
-
-  private static void fillTree() {
-    for (Integer i: lst) {
-      addValueToBinaryTree(i, root);
-    }
-  }
 
   private static void addValueToBinaryTree(int value, Node node) {
     if (node==null || root == null) {
       root = new Node(value);
       return;
     }
+    if (value==node.value)
+      return;
     if (value<node.value) {
       if (node.left != null)
         addValueToBinaryTree(value, node.left);
@@ -115,15 +105,18 @@ public class Main {
 
   public static void main(String[] args) {
     long l = System.currentTimeMillis() ;
-    readDataFromFile();
-    fillTree();
+    if (args.length == 1) {
+      fillListRandom(args[0]);
+    } else {
+      readDataFromFile();
+    }
+    System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
     lst.clear();
     directLeftBypassTree(root);
+    System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
     writeDataToFile();
-    l = System.currentTimeMillis()  - l;
-    //log(String.format("Size mem alloicated: %d M", Runtime.getRuntime().totalMemory()/1024/1024));
-    System.out.println(String.format("%d milliseconds", l));
+    System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
+    System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
   }
-
 }
 
