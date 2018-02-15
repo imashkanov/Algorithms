@@ -70,6 +70,7 @@ public class Main {
         addValueToBinaryTree(i, root);
       }
     } catch (Exception e) {
+      System.out.println("sout error");
       System.exit(2);
     }
   }
@@ -118,35 +119,54 @@ public class Main {
       return new NodeTuple(node, parent);
     } else {
       if (context==0)
-        return getButtomLeftNode(node.right, node, context++);
+        return getButtomLeftNode(node.right, node, ++context);
       else
-        return getButtomLeftNode(node.left, node, context++);
+        return getButtomLeftNode(node.left, node, ++context);
     }
   }
 
   private static void deleteNode(NodeTuple nt) {
     if (nt.node.left == null && nt.node.right == null) {
-      if (nt.parentNode.left == nt.node) {
+      if (nt.parentNode!=null && nt.parentNode.left == nt.node) {
         nt.parentNode.left = null;
       }
-      if (nt.parentNode.right == nt.node) {
+      if (nt.parentNode!=null && nt.parentNode.right == nt.node) {
         nt.parentNode.right = null;
       }
       return;
     }
+    //определяем где мы у родительского нода: слева или справа
+    boolean we_on_left = false;
+    boolean we_on_right = false;
+    if (nt.parentNode!=null) {
+      we_on_right = nt.parentNode.right == nt.node;
+      we_on_left  = nt.parentNode.left == nt.node;
+    }
+    //
     if (nt.node.left != null && nt.node.right == null) {
-      nt.parentNode.left = nt.node.left;
+      if (we_on_right)
+        nt.parentNode.right = nt.node.left;
+      if (we_on_left)
+        nt.parentNode.left = nt.node.left;
+      if (nt.parentNode==null)
+        root = nt.node.left;
       nt.node = null;
       return;
     }
     if (nt.node.left == null && nt.node.right != null) {
-      nt.parentNode.right = nt.node.right;
+      if (we_on_right)
+        nt.parentNode.right = nt.node.right;
+      if (we_on_left)
+        nt.parentNode.left = nt.node.right;
+      if (nt.parentNode==null)
+        root = nt.node.right;
       nt.node = null;
       return;
      }
     NodeTuple brn = getButtomLeftNode(nt.node, nt.parentNode, 0); //самая низкая левая вершина
+    int old_value = brn.node.value;
     deleteNode(brn);
-    nt.node.value = brn.node.value;
+    nt.node.value = old_value;
 
   }
 
@@ -191,7 +211,9 @@ public class Main {
     lst.clear();
     NodeTuple node = findNodeByValue(root, null, delValue);
     System.out.println(node);
-    deleteNode(node);
+    if (node!=null) {
+      deleteNode(node);
+    }
     directLeftBypassTree(root);
     System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
     writeDataToFile();
