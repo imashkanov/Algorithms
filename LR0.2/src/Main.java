@@ -1,5 +1,3 @@
-import jdk.nashorn.internal.runtime.regexp.joni.constants.NodeType;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
