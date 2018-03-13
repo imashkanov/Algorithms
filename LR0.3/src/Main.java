@@ -8,7 +8,7 @@ public class Main {
 
   static InputMatr[] A; //размерности исходных матриц
   static int N;  //число исходных матрий
-  static int[][] M;  //матрица расчета
+  static Cell[][] M;  //матрица расчета
 
   static class InputMatr {
     int cols;
@@ -20,14 +20,26 @@ public class Main {
     }
   }
 
+  static class Cell {
+    int cols;
+    int rows;
+    int count;
+
+    @Override
+    public String toString() {
+      String s = String.format("[%dx%d]", cols, rows);
+      return String.format("%5d %-7s", count, s);
+    }
+  }
+
   public static void printMatrOfOperCnt(String comment) {
     System.out.println(comment);
     for (int iy = 0; iy < N; iy++) {
       for (int ix = 0; ix < iy ; ix++) {
-        System.out.printf("     ");
+        System.out.printf("    X         ");
       }
       for (int ix = iy; ix < N; ix++) {
-        System.out.printf("%4d ", M[iy][ix]);
+        System.out.printf("%s ", M[iy][ix]);
       }
       System.out.printf("\n");
     }
@@ -38,7 +50,12 @@ public class Main {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
     N = Integer.parseInt(in.readLine());
     A = new InputMatr[N];
-    M = new int[N][N];
+    M = new Cell[N][N];
+    for (int row=0; row<N; row++) {
+      for (int col=0; col<N; col++) {
+        M[col][row] = new Cell();
+      }
+    }
     String s;
     int idx = 0;
     while ((s = in.readLine()) != null) {
@@ -63,8 +80,21 @@ public class Main {
     }
   }
 
-  private static int mul2matr(int n1, int n2) {
-    int res = A[n1].cols*A[n1].rows*A[n2].rows;
+  private static Cell mul2matr(int r, int c) {
+    Cell res = new Cell();
+    res.cols = A[r].cols;
+    res.rows = A[c].rows;
+    if (M[r][c-1].cols>0) {
+      int leftCnt = M[r][c - 1].count;
+      int left = M[r][c - 1].cols * M[r][c - 1].rows * res.rows;
+      int resL = leftCnt + left;
+      int botmCnt = M[r + 1][c].count;
+      int botm = M[r + 1][c].cols * res.cols * res.rows;
+      int resB = botmCnt + botm;
+      res.count = Math.min(resL, resB);
+    } else {
+      res.count = A[c].cols*A[c].rows*A[r].cols;
+    }
     return res;
   }
 
