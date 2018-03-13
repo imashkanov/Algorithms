@@ -1,8 +1,6 @@
 import com.sun.deploy.util.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 public class Main {
 
@@ -46,7 +44,7 @@ public class Main {
 
   }
 
-  public static void readDataFromFIle() throws IOException {
+  public static void readDataFromFIle() throws Exception {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
     N = Integer.parseInt(in.readLine());
     A = new InputMatr[N];
@@ -58,15 +56,19 @@ public class Main {
     }
     String s;
     int idx = 0;
-    while ((s = in.readLine()) != null) {
+    while (((s = in.readLine()) != null)) {
       String[] leksArr = StringUtils.splitString(s, " ");
       InputMatr matr = new InputMatr();
       matr.cols = Integer.parseInt(leksArr[0]);
       matr.rows = Integer.parseInt(leksArr[1]);
       A[idx] = matr;
       idx++;
+      if (idx==N)
+        break;
     }
     in.close();
+    if (idx<N)
+       throw new Exception("Input file error format");
   }
 
   public static void calc() {
@@ -76,7 +78,7 @@ public class Main {
         int row = i;
         M[row][col] = mul2matr(row, col);
       }
-      printMatrOfOperCnt(Integer.toString(step));
+      //printMatrOfOperCnt(Integer.toString(step));
     }
   }
 
@@ -98,17 +100,32 @@ public class Main {
     return res;
   }
 
+  private static void writeDataToFile() {
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
+      int res = M[0][N-1].count;
+      writer.write(Integer.toString(res));
+      writer.close();
+    } catch (IOException e) {
+      System.out.println("error in output file");
+    }
+  }
+
+
+
   public static void main(String[] args) {
     try {
+      long l = System.currentTimeMillis() ;
       readDataFromFIle();
-      System.out.println(N);
-      for (InputMatr matr: A) {
-        System.out.println(matr);
-      }
-    } catch (IOException e) {
+      System.out.println(String.format("%d ms loaded", System.currentTimeMillis() - l));
+      calc();
+      System.out.println(String.format("%d ms calc", System.currentTimeMillis() - l));
+      writeDataToFile();
+      System.out.println(String.format("%d ms write", System.currentTimeMillis() - l));
+    } catch (Exception e) {
       e.printStackTrace();
     }
-    calc();
 
   }
+
 }
