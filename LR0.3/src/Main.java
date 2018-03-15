@@ -1,109 +1,58 @@
-import com.sun.deploy.util.StringUtils;
 
 import java.io.*;
 
 public class Main {
 
-  static InputMatr[] A; //размерности исходных матриц
-  static int N;  //число исходных матрий
-  static Cell[][] M;  //матрица расчета
-
-  static class InputMatr {
-    int cols;
-    int rows;
-
-    @Override
-    public String toString() {
-      return String.format("[%d x %d]", cols, rows);
-    }
-  }
-
-  static class Cell {
-    int cols;
-    int rows;
-    int count;
-
-    @Override
-    public String toString() {
-      String s = String.format("[%dx%d]", cols, rows);
-      return String.format("%5d %-7s", count, s);
-    }
-  }
-
-  public static void printMatrOfOperCnt(String comment) {
-    System.out.println(comment);
-    for (int iy = 0; iy < N; iy++) {
-      for (int ix = 0; ix < iy ; ix++) {
-        System.out.printf("    X         ");
-      }
-      for (int ix = iy; ix < N; ix++) {
-        System.out.printf("%s ", M[iy][ix]);
-      }
-      System.out.printf("\n");
-    }
-
-  }
+  static int[] p; //размерности исходных матриц
+  static int n;  //число исходных матриw
 
   public static void readDataFromFIle() throws Exception {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
-    N = Integer.parseInt(in.readLine());
-    A = new InputMatr[N];
-    M = new Cell[N][N];
-    for (int row=0; row<N; row++) {
-      for (int col=0; col<N; col++) {
-        M[col][row] = new Cell();
-      }
-    }
+    n = Integer.parseInt(in.readLine());
+    p = new int[n+1];
     String s;
     int idx = 0;
     while (((s = in.readLine()) != null)) {
-      String[] leksArr = StringUtils.splitString(s, " ");
-      InputMatr matr = new InputMatr();
-      matr.cols = Integer.parseInt(leksArr[0]);
-      matr.rows = Integer.parseInt(leksArr[1]);
-      A[idx] = matr;
-      idx++;
-      if (idx==N)
+      String[] leksArr = s.split(" ");
+      int dimX = Integer.parseInt(leksArr[0]);
+      int dimY = Integer.parseInt(leksArr[1]);
+      if (idx == 0) {
+        p[idx++] = dimX;
+      }
+      p[idx++] = dimY;
+      if (idx== n+1)
         break;
     }
     in.close();
-    if (idx<N)
+    if (idx< n)
        throw new Exception("Input file error format");
   }
 
-  public static void calc() {
-    for (int step = 1; step< N; step++) {
-      for (int i = 0; i< N -step; i++) {
-        int col = i+step;
-        int row = i;
-        M[row][col] = mul2matr(row, col);
-      }
-      //printMatrOfOperCnt(Integer.toString(step));
-    }
-  }
+  public static int calc() {
+    int n = p.length - 1;
+    int[][] dp = new int[n + 1][n + 1];
 
-  private static Cell mul2matr(int r, int c) {
-    Cell res = new Cell();
-    res.cols = A[r].cols;
-    res.rows = A[c].rows;
-    if (M[r][c-1].cols>0) {
-      int leftCnt = M[r][c - 1].count;
-      int left = M[r][c - 1].cols * M[r][c - 1].rows * res.rows;
-      int resL = leftCnt + left;
-      int botmCnt = M[r + 1][c].count;
-      int botm = M[r + 1][c].cols * res.cols * res.rows;
-      int resB = botmCnt + botm;
-      res.count = Math.min(resL, resB);
-    } else {
-      res.count = A[c].cols*A[c].rows*A[r].cols;
+    for (int i = 1; i <= n; i++) {
+      dp[i][i] = 0;
     }
-    return res;
+
+    for (int l = 2; l <= n; l++) {
+      for (int i = 1; i <= n - l + 1; i++) {
+        int j = i + l - 1;
+        dp[i][j] = Integer.MAX_VALUE;
+        for (int k = i; k <= j - 1; k++) {
+          dp[i][j] = Math.min(dp[i][j],
+            dp[i][k] + dp[k + 1][j] + p[i - 1] * p[k] * p[j]);
+        }
+      }
+    }
+    return dp[1][n];
   }
 
   private static void writeDataToFile() {
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
-      int res = M[0][N-1].count;
+      int res = calc();
       writer.write(Integer.toString(res));
       writer.close();
     } catch (IOException e) {
@@ -111,14 +60,15 @@ public class Main {
     }
   }
 
-
-
   public static void main(String[] args) {
     try {
       long l = System.currentTimeMillis() ;
       readDataFromFIle();
+      for (int i:p) {
+        System.out.printf("%d ", i);
+      }
+      System.out.println();
       System.out.println(String.format("%d ms loaded", System.currentTimeMillis() - l));
-      calc();
       System.out.println(String.format("%d ms calc", System.currentTimeMillis() - l));
       writeDataToFile();
       System.out.println(String.format("%d ms write", System.currentTimeMillis() - l));
