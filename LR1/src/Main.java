@@ -1,12 +1,13 @@
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Scanner;
 
-public class Main {
+public class Main implements Runnable {
+
 
   static class Node {
     Node left; //левый потомок
@@ -55,18 +56,14 @@ public class Main {
     }
   }
 
-  private static void readDataFromFile() {
-    try {
-      Scanner sc = new Scanner(new File("in.txt"));
-
-      while (sc.hasNextInt()) {
-        int i =sc.nextInt();
-        addValueToBinaryTree(i, root);
-      }
-    } catch (Exception e) {
-      System.out.println("sout error");
-      System.exit(2);
+  private static void readDataFromFile() throws IOException {
+    BufferedReader in = new BufferedReader(new FileReader("in.txt"));
+    String s;
+    while ((s = in.readLine()) != null) {
+      int i = Integer.parseInt(s);
+      addValueToBinaryTree(i, root);
     }
+    in.close();
   }
 
   private static int heightOfTree(Node node) { //рекурсивный метод, возвращающий для данной вершины её высоту
@@ -265,13 +262,19 @@ public class Main {
 
 
   public static void main(String[] args)  {
+    new Thread(null, new Main(), "", 64 * 100 * 1024).start();
+  }
+
+  @Override
+  public void run() {
     long l = System.currentTimeMillis() ;
-    if (args.length == 1) {
-      fillListRandom(args[0]);
-    } else {
+    try {
       readDataFromFile();
+    } catch (Exception e) {
+      System.out.println("sout error");
+      System.exit(2);
     }
-    System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
+    //System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
     lst.clear();
     directLeftBypassTreeWithCalc(root);
     int val = valueOfNeededNode();
@@ -284,9 +287,11 @@ public class Main {
     }
     lst.clear();
     directLeftBypassTree(root);
-    System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
+    //System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
     writeDataToFile(true, lst);
-    System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
+    //System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
   }
+
+
 }
 
