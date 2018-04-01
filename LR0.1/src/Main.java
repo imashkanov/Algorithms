@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Main {
+public class Main implements Runnable{
 
- static class Node {
+
+
+  static class Node {
     Node left;
     Node right;
     int value;
@@ -104,12 +106,18 @@ public class Main {
 
 
   public static void main(String[] args) {
+    new Thread(null, new Main(), "", 64 * 1024 * 1024).start();
+  }
+
+  @Override
+  public void run() {
     long l = System.currentTimeMillis() ;
-    if (args.length == 1) {
+    /*if (args.length == 1) {
       fillListRandom(args[0]);
     } else {
       readDataFromFile();
-    }
+    }*/
+    readDataFromFile();
     System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
     lst.clear();
     directLeftBypassTree(root);
@@ -118,5 +126,7 @@ public class Main {
     System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
     System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
   }
+
 }
+
 
