@@ -57,25 +57,47 @@ public class Main implements Runnable {
   }
 
   private static void readDataFromFile() throws IOException {
+    long time_read=0;
+    long time_parse=0;
+    long time_add=0;
     BufferedReader in = new BufferedReader(new FileReader("in.txt"));
     String s;
-    while ((s = in.readLine()) != null) {
+    while (true) {
+      long l = System.currentTimeMillis();
+      s = in.readLine();
+      l = System.currentTimeMillis() - l;
+      time_read += l;
+      if (s== null)
+        break;
+      //
+      l = System.currentTimeMillis();
       int i = Integer.parseInt(s);
+      l = System.currentTimeMillis() - l;
+      time_parse += l;
+      //
+      l = System.currentTimeMillis();
       addValueToBinaryTree(i, root);
+      l = System.currentTimeMillis() - l;
+      time_add += l;
     }
     in.close();
+    System.out.printf("read %d ms\nparse %d ms\nadd %d ms\n", time_read, time_parse, time_add);
   }
 
   private static int heightOfTree(Node node) { //рекурсивный метод, возвращающий для данной вершины её высоту
     if (node == null)
       return 0;
     int leftHeight, rightHeight;
+    //
     if (node.left != null) {
       leftHeight = heightOfTree(node.left);
+      node.leftHeight = leftHeight;
     } else
        leftHeight = -1;
+    //
     if (node.right != null) {
       rightHeight = heightOfTree(node.right);
+      node.rightHeight = rightHeight;
     } else
        rightHeight = -1;
     int res = leftHeight > rightHeight ? leftHeight : rightHeight;
@@ -207,17 +229,18 @@ public class Main implements Runnable {
     node.leftHeight = -1;
     node.rightHeight = -1;
     if (node.left != null) {
-      node.leftHeight = heightOfTree(node.left);
+      //node.leftHeight = heightOfTree(node.left);
       lst.add(node.left);
       node.cntLeft = directLeftBypassTreeWithCalc(node.left) + 1;
     }
     if (node.right != null) {
-      node.rightHeight = heightOfTree(node.right);
+      //node.rightHeight = heightOfTree(node.right);
       lst.add(node.right);
       node.cntRight = directLeftBypassTreeWithCalc(node.right) +1;
     }
     return node.cntLeft + node.cntRight;
   }
+
 
   //метод возвращает значение вершины, которая удовлетворяет всем требованиям задания
   private static int valueOfNeededNode() {
@@ -262,7 +285,7 @@ public class Main implements Runnable {
 
 
   public static void main(String[] args)  {
-    new Thread(null, new Main(), "", 64 * 100 * 1024).start();
+    new Thread(null, new Main(), "", 5 * 1024 * 1024).start();
   }
 
   @Override
@@ -274,9 +297,11 @@ public class Main implements Runnable {
       System.out.println("sout error");
       System.exit(2);
     }
-    //System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
-    lst.clear();
+    System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
+    lst = new ArrayList<Node>();
     directLeftBypassTreeWithCalc(root);
+    root.leftHeight = heightOfTree(root.left);
+    root.rightHeight= heightOfTree(root.right);
     int val = valueOfNeededNode();
     //int val = 20;
     if (val != 0) {
@@ -285,11 +310,11 @@ public class Main implements Runnable {
         deleteNode(node);
       }
     }
-    lst.clear();
+    lst = new ArrayList<Node>();
     directLeftBypassTree(root);
-    //System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
+    System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
     writeDataToFile(true, lst);
-    //System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
+    System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
   }
 
 

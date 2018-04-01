@@ -3,3 +3,5 @@
 out/
 output.txt
 *.class
+out.txt
+*~*
