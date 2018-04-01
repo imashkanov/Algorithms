@@ -5,7 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Main {
+public class Main implements Runnable {
+
 
   static class Node {
     Node left;
@@ -64,7 +65,7 @@ public class Main {
       System.out.println("node for delete: "+delValue);
       while (sc.hasNextInt()) {
         int i =sc.nextInt();
-        System.out.println(i);
+        //System.out.println(i);
         addValueToBinaryTree(i, root);
       }
     } catch (Exception e) {
@@ -199,12 +200,13 @@ public class Main {
 
 
   public static void main(String[] args) {
+    new Thread(null, new Main(), "", 64 * 512 * 1024).start();
+  }
+
+  @Override
+  public void run() {
     long l = System.currentTimeMillis() ;
-    if (args.length == 1) {
-      fillListRandom(args[0]);
-    } else {
-      readDataFromFile();
-    }
+    readDataFromFile();
     System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
     lst.clear();
     NodeTuple node = findNodeByValue(root, null, delValue);
@@ -218,5 +220,8 @@ public class Main {
     System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
     System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
   }
+
+
+
 }
 
