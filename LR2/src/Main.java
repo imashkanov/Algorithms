@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -30,6 +31,12 @@ public class Main {
     public String toString() {
       return String.format("[#%-5d | cap:%d  A/B: %d/%d  free:%d   %s", num, n, a, b, cntOfFree(), getTypeOfFlu());
     }
+  }
+
+  //класс - флаг доступности разложения по данному количеству свободных мест
+  static class Flag {
+    boolean avail = false;
+    ArrayList<Chamber> availChams = new ArrayList<Chamber>();//из каких палат состоит найденное разложение
   }
   private static final boolean DEBUG = false;
 
@@ -81,12 +88,11 @@ public class Main {
     printTable("After sort data:");
   }
 
-
-  public static void calc() {
+  //заполнение непустых палат
+  public static void calcNotEmpty() {
     leftA = needA;
     leftB = needB;
 
-    //заполнение непустых палат
     for (Chamber c : arr) {
       if (c.getTypeOfFlu() == Chamber.typeOfFlu.ANY) {
         continue;
@@ -115,7 +121,13 @@ public class Main {
       }
     }
 
-    //заполнение пустых палат
+    printTable("After allocation:");
+    if (DEBUG)
+     System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
+  }
+
+  /*public static void calcEmptyVer1() {
+    //заполнение пустых палат по методу в лоб
     for (Chamber c : arr) {
       if (c.getTypeOfFlu() != Chamber.typeOfFlu.ANY) {
         continue;
@@ -143,12 +155,28 @@ public class Main {
       }
     } //for
     allocated = needA+needB-leftB-leftA;
+  }*/
 
-    printTable("After allocation:");
-    if (DEBUG)
-     System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
+  public static ArrayList<Chamber> getCombination(int cnt) {
+    ArrayList<Chamber> res = new ArrayList<Chamber>();
+
+    return res;
   }
 
+  //заполнение пустых палат по методу динамического программирования
+  public static void calcEmptyVer2() {
+    int lenOfFlagsArr = 0;
+    for (Chamber c: arr) {
+      if (c.cntOfFree() == c.n) {
+        lenOfFlagsArr += c.n;
+      }
+    }
+    Flag[] flags = new Flag[lenOfFlagsArr];
+    for (int i=0; i< flags.length; i++) {
+      flags[i] = new Flag();
+    }
+
+  }
 
   public static void printTable(String caption) {
     if (!DEBUG)
@@ -200,7 +228,8 @@ public class Main {
       System.out.printf("need alloc: %d needA:%d, needB:%d, cntCham:%d\n", needA+needB, needA, needB, p);
       printTable("Source data:");
       sort();
-      calc();
+      calcNotEmpty();
+      calcEmptyVer2();
       writeDataToFile();
       System.out.printf("allocated = %d\n", allocated);
       System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
