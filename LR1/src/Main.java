@@ -12,36 +12,22 @@ public class Main implements Runnable {
   static class Node {
     Node left; //левый потомок
     Node right; //правый потомок
+    Node parent;
     int cntLeft; //количество элементов в левом поддереве
     int cntRight; //количество элементов в правом поддереве
     int leftHeight; //высота левого поддерева
     int rightHeight; //высота правого поддерева
     int value; //ключ
 
-    Node (int value) {
+    Node (int value, Node parent) {
       this.value = value;
+      this.parent = parent;
     }
 
     @Override
     public String toString() {
       return String.format("[V:%-3d  L:%5s R:%5s  hL:%-2d hR:%-2d   cL/cR:%d/%d]", value, left!=null, right!=null,
         leftHeight, rightHeight, cntLeft, cntRight);
-    }
-  }
-
-  static class NodeTuple { //класс Node, переделанный для рекурсии: вместо node передается пара из двух node
-    // первый - мыб второй - наш отец
-    Node node;
-    Node parentNode;
-
-    NodeTuple(Node node, Node parentNode) {
-      this.node = node;
-      this.parentNode = parentNode;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s %s", node, parentNode);
     }
   }
 
@@ -107,7 +93,7 @@ public class Main implements Runnable {
 
   private static void addValueToBinaryTree(int value, Node node) { //метод добавления вершины в дерево
     if (node==null || root == null) {
-      root = new Node(value);
+      root = new Node(value, null);
       return;
     }
     if (value==node.value)
@@ -116,29 +102,29 @@ public class Main implements Runnable {
       if (node.left != null)
         addValueToBinaryTree(value, node.left);
       else
-        node.left = new Node(value);
+        node.left = new Node(value, node);
     } else {
       if (node.right != null)
         addValueToBinaryTree(value, node.right);
       else
-        node.right = new Node(value);
+        node.right = new Node(value, node);
     }
   }
 
   //метод поиска вершины по заданному значению
-  private static NodeTuple findNodeByValue(Node node, Node parent, int value) {
+  private static Node findNodeByValue(Node node,Node parent, int value) {
     if (node == null)
       return null;
     if (node.value == value)
-      return new NodeTuple(node, parent);
-    NodeTuple res = null;
+      return new Node(node.value, parent);
+    Node res = null;
     if (node.left != null) {
-      NodeTuple resLeft = findNodeByValue(node.left, node, value);
+      Node resLeft = findNodeByValue(node.left, node, value);
       if (resLeft != null)
         res = resLeft;
     }
     if (node.right != null) {
-      NodeTuple resRight = findNodeByValue(node.right, node, value);
+      Node resRight = findNodeByValue(node.right, node, value);
       if (resRight != null)
         res = resRight;
     }
@@ -146,9 +132,9 @@ public class Main implements Runnable {
   }
 
   //метод возвращает наименьшую по значению вершину (самую нижнюю левую) для данной вершины
-  private static NodeTuple getButtomLeftNode(Node node, Node parent, int context) {
+  private static Node getButtomLeftNode(Node node, Node parent, int context) {
     if (node.left == null) {
-      return new NodeTuple(node, parent);
+      return new Node(node.value, parent);
     } else {
       if (context==0)
         return getButtomLeftNode(node.right, node, ++context);
@@ -158,47 +144,47 @@ public class Main implements Runnable {
   }
 
   //метод удаляет вершину из дерева правым удалением
-  private static void deleteNode(NodeTuple nt) {
-    if (nt.node.left == null && nt.node.right == null) {
-      if (nt.parentNode!=null && nt.parentNode.left == nt.node) {
-        nt.parentNode.left = null;
+  private static void deleteNode(Node node) {
+    if (node.left == null && node.right == null) {
+      if (node.parent!=null && node.parent.left == node) {
+        node.parent.left = null;
       }
-      if (nt.parentNode!=null && nt.parentNode.right == nt.node) {
-        nt.parentNode.right = null;
+      if (node.parent!=null && node.parent.right == node) {
+        node.parent.right = null;
       }
       return;
     }
     //определяем где мы у родительского нода: слева или справа
     boolean we_on_left = false;
     boolean we_on_right = false;
-    if (nt.parentNode!=null) {
-      we_on_right = nt.parentNode.right == nt.node;
-      we_on_left  = nt.parentNode.left == nt.node;
+    if (node.parent!=null) {
+      we_on_right = node.parent.right == node;
+      we_on_left  = node.parent.left == node;
     }
-    if (nt.node.left != null && nt.node.right == null) {
+    if (node.left != null && node.right == null) {
       if (we_on_right)
-        nt.parentNode.right = nt.node.left;
+        node.parent.right = node.left;
       if (we_on_left)
-        nt.parentNode.left = nt.node.left;
-      if (nt.parentNode==null)
-        root = nt.node.left;
-      nt.node = null;
+        node.parent.left = node.left;
+      if (node.parent==null)
+        root = node.left;
+      node = null;
       return;
     }
-    if (nt.node.left == null && nt.node.right != null) {
+    if (node.left == null && node.right != null) {
       if (we_on_right)
-        nt.parentNode.right = nt.node.right;
+        node.parent.right = node.right;
       if (we_on_left)
-        nt.parentNode.left = nt.node.right;
-      if (nt.parentNode==null)
-        root = nt.node.right;
-      nt.node = null;
+        node.parent.left = node.right;
+      if (node.parent==null)
+        root = node.right;
+      node = null;
       return;
     }
-    NodeTuple brn = getButtomLeftNode(nt.node, nt.parentNode, 0); //самая низкая левая вершина
-    int old_value = brn.node.value;
+    Node brn = getButtomLeftNode(node, node.parent, 0); //самая низкая левая вершина
+    int old_value = brn.value;
     deleteNode(brn);
-    nt.node.value = old_value;
+    node.value = old_value;
 
   }
   //левый обход бинарного дерева
@@ -305,7 +291,7 @@ public class Main implements Runnable {
     int val = valueOfNeededNode();
     //int val = 20;
     if (val != 0) {
-      NodeTuple node = findNodeByValue(root, null, val);
+      Node node = findNodeByValue(root, null, val);
       if (node != null) {
         deleteNode(node);
       }
