@@ -9,19 +9,17 @@ import java.util.Comparator;
 public class Main implements Runnable {
 
 
-  static class Node {
+  class Node {
     Node left; //левый потомок
     Node right; //правый потомок
-    Node parent;
     int cntLeft; //количество элементов в левом поддереве
     int cntRight; //количество элементов в правом поддереве
     int leftHeight; //высота левого поддерева
     int rightHeight; //высота правого поддерева
     int value; //ключ
 
-    Node (int value, Node parent) {
+    Node (int value) {
       this.value = value;
-      this.parent = parent;
     }
 
     @Override
@@ -31,10 +29,26 @@ public class Main implements Runnable {
     }
   }
 
-  static ArrayList<Node> lst = new ArrayList<Node>();  //список вершин
-  static Node root = null; //корень дерева
+  class NodeTuple { //класс Node, переделанный для рекурсии: вместо node передается пара из двух node
+    // первый - мыб второй - наш отец
+    Node node;
+    Node parentNode;
 
-  private static void fillListRandom(String arg) {
+    NodeTuple(Node node, Node parentNode) {
+      this.node = node;
+      this.parentNode = parentNode;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("%s %s", node, parentNode);
+    }
+  }
+
+  ArrayList<Node> lst = new ArrayList<Node>();  //список вершин
+  Node root = null; //корень дерева
+
+  private void fillListRandom(String arg) {
     int cnt = Integer.parseInt(arg);
     for (int i=0; i<cnt; i++) {
       int digit = (int) (Math.random() * 1000000);
@@ -42,7 +56,7 @@ public class Main implements Runnable {
     }
   }
 
-  private static void readDataFromFile() throws IOException {
+  private void readDataFromFile() throws IOException {
     long time_read=0;
     long time_parse=0;
     long time_add=0;
@@ -70,7 +84,7 @@ public class Main implements Runnable {
     System.out.printf("read %d ms\nparse %d ms\nadd %d ms\n", time_read, time_parse, time_add);
   }
 
-  private static int heightOfTree(Node node) { //рекурсивный метод, возвращающий для данной вершины её высоту
+  private int heightOfTree(Node node) { //рекурсивный метод, возвращающий для данной вершины её высоту
     if (node == null)
       return 0;
     int leftHeight, rightHeight;
@@ -91,9 +105,9 @@ public class Main implements Runnable {
 
   }
 
-  private static void addValueToBinaryTree(int value, Node node) { //метод добавления вершины в дерево
+  private void addValueToBinaryTree(int value, Node node) { //метод добавления вершины в дерево
     if (node==null || root == null) {
-      root = new Node(value, null);
+      root = new Node(value);
       return;
     }
     if (value==node.value)
@@ -102,29 +116,29 @@ public class Main implements Runnable {
       if (node.left != null)
         addValueToBinaryTree(value, node.left);
       else
-        node.left = new Node(value, node);
+        node.left = new Node(value);
     } else {
       if (node.right != null)
         addValueToBinaryTree(value, node.right);
       else
-        node.right = new Node(value, node);
+        node.right = new Node(value);
     }
   }
 
   //метод поиска вершины по заданному значению
-  private static Node findNodeByValue(Node node,Node parent, int value) {
+  private NodeTuple findNodeByValue(Node node, Node parent, int value) {
     if (node == null)
       return null;
     if (node.value == value)
-      return new Node(node.value, parent);
-    Node res = null;
+      return new NodeTuple(node, parent);
+    NodeTuple res = null;
     if (node.left != null) {
-      Node resLeft = findNodeByValue(node.left, node, value);
+      NodeTuple resLeft = findNodeByValue(node.left, node, value);
       if (resLeft != null)
         res = resLeft;
     }
     if (node.right != null) {
-      Node resRight = findNodeByValue(node.right, node, value);
+      NodeTuple resRight = findNodeByValue(node.right, node, value);
       if (resRight != null)
         res = resRight;
     }
@@ -132,9 +146,9 @@ public class Main implements Runnable {
   }
 
   //метод возвращает наименьшую по значению вершину (самую нижнюю левую) для данной вершины
-  private static Node getButtomLeftNode(Node node, Node parent, int context) {
+  private NodeTuple getButtomLeftNode(Node node, Node parent, int context) {
     if (node.left == null) {
-      return new Node(node.value, parent);
+      return new NodeTuple(node, parent);
     } else {
       if (context==0)
         return getButtomLeftNode(node.right, node, ++context);
@@ -144,51 +158,51 @@ public class Main implements Runnable {
   }
 
   //метод удаляет вершину из дерева правым удалением
-  private static void deleteNode(Node node) {
-    if (node.left == null && node.right == null) {
-      if (node.parent!=null && node.parent.left == node) {
-        node.parent.left = null;
+  private void deleteNode(NodeTuple nt) {
+    if (nt.node.left == null && nt.node.right == null) {
+      if (nt.parentNode!=null && nt.parentNode.left == nt.node) {
+        nt.parentNode.left = null;
       }
-      if (node.parent!=null && node.parent.right == node) {
-        node.parent.right = null;
+      if (nt.parentNode!=null && nt.parentNode.right == nt.node) {
+        nt.parentNode.right = null;
       }
       return;
     }
     //определяем где мы у родительского нода: слева или справа
     boolean we_on_left = false;
     boolean we_on_right = false;
-    if (node.parent!=null) {
-      we_on_right = node.parent.right == node;
-      we_on_left  = node.parent.left == node;
+    if (nt.parentNode!=null) {
+      we_on_right = nt.parentNode.right == nt.node;
+      we_on_left  = nt.parentNode.left == nt.node;
     }
-    if (node.left != null && node.right == null) {
+    if (nt.node.left != null && nt.node.right == null) {
       if (we_on_right)
-        node.parent.right = node.left;
+        nt.parentNode.right = nt.node.left;
       if (we_on_left)
-        node.parent.left = node.left;
-      if (node.parent==null)
-        root = node.left;
-      node = null;
+        nt.parentNode.left = nt.node.left;
+      if (nt.parentNode==null)
+        root = nt.node.left;
+      nt.node = null;
       return;
     }
-    if (node.left == null && node.right != null) {
+    if (nt.node.left == null && nt.node.right != null) {
       if (we_on_right)
-        node.parent.right = node.right;
+        nt.parentNode.right = nt.node.right;
       if (we_on_left)
-        node.parent.left = node.right;
-      if (node.parent==null)
-        root = node.right;
-      node = null;
+        nt.parentNode.left = nt.node.right;
+      if (nt.parentNode==null)
+        root = nt.node.right;
+      nt.node = null;
       return;
     }
-    Node brn = getButtomLeftNode(node, node.parent, 0); //самая низкая левая вершина
-    int old_value = brn.value;
+    NodeTuple brn = getButtomLeftNode(nt.node, nt.parentNode, 0); //самая низкая левая вершина
+    int old_value = brn.node.value;
     deleteNode(brn);
-    node.value = old_value;
+    nt.node.value = old_value;
 
   }
   //левый обход бинарного дерева
-  private static void directLeftBypassTree(Node node) {
+  private void directLeftBypassTree(Node node) {
     if (root == null)
       return;
     if (root == node) {
@@ -206,7 +220,7 @@ public class Main implements Runnable {
 
 
   //левый обход бинарного дерева + подсчет высот и количеств потомков правого и левого поддеревьев
-  private static int directLeftBypassTreeWithCalc(Node node) {
+  private int directLeftBypassTreeWithCalc(Node node) {
     if (root == null)
       return 0;
     if (root == node) {
@@ -229,7 +243,7 @@ public class Main implements Runnable {
 
 
   //метод возвращает значение вершины, которая удовлетворяет всем требованиям задания
-  private static int valueOfNeededNode() {
+  private int valueOfNeededNode() {
     ArrayList<Node> lstOfNeededNodes = new ArrayList<Node>();
     for (Node node: lst) {
       if ((node.leftHeight == node.rightHeight) && (node.cntLeft != node.cntRight)) {
@@ -253,7 +267,7 @@ public class Main implements Runnable {
   }
 
   //метод записи списка в файл
-  private static void writeDataToFile(boolean simpleDigit, ArrayList<Node> lst) {
+  private void writeDataToFile(boolean simpleDigit, ArrayList<Node> lst) {
     try {
       FileWriter writer = new FileWriter("out.txt");
       for (Node node : lst) {
@@ -271,7 +285,9 @@ public class Main implements Runnable {
 
 
   public static void main(String[] args)  {
-    new Thread(null, new Main(), "", 5 * 1024 * 1024).start();
+    Thread t1 = new Thread(null, new Main(), "",2  * 1024 * 1024);
+    t1.setPriority(10);
+    t1.start();
   }
 
   @Override
@@ -291,7 +307,7 @@ public class Main implements Runnable {
     int val = valueOfNeededNode();
     //int val = 20;
     if (val != 0) {
-      Node node = findNodeByValue(root, null, val);
+      NodeTuple node = findNodeByValue(root, null, val);
       if (node != null) {
         deleteNode(node);
       }
