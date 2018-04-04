@@ -38,13 +38,12 @@ public class Main {
     boolean avail = false;
     ArrayList<Chamber> availChams = new ArrayList<Chamber>();//из каких палат состоит найденное разложение
   }
-  private static final boolean DEBUG = false;
+  private static final boolean DEBUG = true;
 
   static int p;
   static int needA;
   static int needB;
-  static Chamber[] arr;
-  static Chamber[] arrOfNullCham;
+  static Chamber[] mArr;
   static int leftA;
   static int leftB;
   static int allocated;
@@ -54,9 +53,9 @@ public class Main {
     needA = Integer.parseInt(in.readLine());
     needB = Integer.parseInt(in.readLine());
     p = Integer.parseInt(in.readLine());
-    arr = new Chamber[p];
+    mArr = new Chamber[p];
     for (int i=0; i<p; i++) {
-      arr[i] = new Chamber();
+      mArr[i] = new Chamber();
     }
     String s;
     int idx = 0;
@@ -65,10 +64,10 @@ public class Main {
       int cap = Integer.parseInt(leksArr[0]);
       int a = Integer.parseInt(leksArr[1]);
       int b = Integer.parseInt(leksArr[2]);
-      arr[idx].a = a;
-      arr[idx].b = b;
-      arr[idx].n = cap;
-      arr[idx].num = idx+1;
+      mArr[idx].a = a;
+      mArr[idx].b = b;
+      mArr[idx].n = cap;
+      mArr[idx].num = idx+1;
       idx++;
       if (idx== p+1)
         break;
@@ -77,7 +76,7 @@ public class Main {
   }
 
   public  static  void  sort() {
-    Arrays.sort(arr, new Comparator<Chamber>() {
+    Arrays.sort(mArr, new Comparator<Chamber>() {
       @Override
       public int compare(Chamber c1, Chamber c2) {
         int cnt1 = c1.cntOfFree();
@@ -85,11 +84,11 @@ public class Main {
         return Integer.compare(cnt2, cnt1);
       }
     });
-    printTable("After sort data:");
+    printTable("After sort data:", mArr);
   }
 
   //заполнение непустых палат
-  public static void calcNotEmpty() {
+  public static void calcNotEmpty(Chamber[] arr) {
     leftA = needA;
     leftB = needB;
 
@@ -120,15 +119,20 @@ public class Main {
         }
       }
     }
-
-    printTable("After allocation:");
+    printTable("After allocation:", arr);
     if (DEBUG)
      System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
   }
 
-  /*public static void calcEmptyVer1() {
+  public static void calcEmptyGreedy(Chamber[] arr) {
     //заполнение пустых палат по методу в лоб
-    for (Chamber c : arr) {
+    for (int idx=0; idx<arr.length; idx++) {
+      //условие прекращения цикла = когда остается менее 16 палат (для точного алгоритма)
+      if (arr.length-idx<=16) {
+        System.out.printf("calcEmptyGreedy break on idx=%d of %d\n", idx, arr.length);
+        break;
+      }
+      Chamber c = arr[idx];
       if (c.getTypeOfFlu() != Chamber.typeOfFlu.ANY) {
         continue;
       }
@@ -154,8 +158,8 @@ public class Main {
         }
       }
     } //for
-    allocated = needA+needB-leftB-leftA;
-  }*/
+
+  }
 
   public static ArrayList<Chamber> getCombination(int cnt) {
     ArrayList<Chamber> res = new ArrayList<Chamber>();
@@ -163,27 +167,25 @@ public class Main {
     return res;
   }
 
-  //заполнение пустых палат по методу динамического программирования
-  public static void calcEmptyVer2() {
-    int lenOfFlagsArr = 0;
+  //точное распределение пустых палат по методу динамического программирования
+  public static void calcEmptyPrecise(Chamber[] arr) {
+    System.out.printf("calcEmptyPrecise inc len %d\n", arr.length);
+    int[] caps = Arrays.stream(arr).mapToInt(x -> x.cntOfFree()).toArray();
+    int totalCap = Arrays.stream(caps).sum();
+    System.out.printf("calcEmptyPrecise totalCap=%d\n", totalCap);
     for (Chamber c: arr) {
-      if (c.cntOfFree() == c.n) {
-        lenOfFlagsArr += c.n;
-      }
     }
-    Flag[] flags = new Flag[lenOfFlagsArr];
-    for (int i=0; i< flags.length; i++) {
-      flags[i] = new Flag();
-    }
-
   }
 
-  public static void printTable(String caption) {
+
+
+  public static void printTable(String caption, Chamber[] arr) {
     if (!DEBUG)
       return;
     System.out.println();
     System.out.println(caption);
     System.out.println("----------");
+    System.out.printf("Len=%d\n", arr.length);
     for(Chamber c: arr) {
       System.out.printf("%s\n", c);
     }
@@ -211,7 +213,7 @@ public class Main {
 
   //сортировка по номеру палаты
   public static Chamber[] sortFilteredArrByCap() {
-    Chamber[] res = Arrays.stream(arr).filter(x -> (x.a !=0)).toArray(Chamber[]::new);
+    Chamber[] res = Arrays.stream(mArr).filter(x -> (x.a !=0)).toArray(Chamber[]::new);
     Arrays.sort(res, new Comparator<Chamber>() {
       @Override
       public int compare(Chamber o1, Chamber o2) {
@@ -226,10 +228,18 @@ public class Main {
       long l = System.currentTimeMillis() ;
       readDataFromFile();
       System.out.printf("need alloc: %d needA:%d, needB:%d, cntCham:%d\n", needA+needB, needA, needB, p);
-      printTable("Source data:");
+      printTable("Source data:", mArr);
       sort();
-      calcNotEmpty();
-      calcEmptyVer2();
+      Chamber[] arrNotEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() != Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+      printTable("Arr of not empty:", arrNotEmpty);
+      calcNotEmpty(arrNotEmpty);
+      Chamber[] arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+      printTable("Arr of empty1:", arrEmpty);
+      calcEmptyGreedy(arrEmpty);
+      arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+      printTable("Arr of empty2:", arrEmpty);
+      calcEmptyPrecise(arrEmpty);
+      allocated = needA+needB-leftB-leftA;
       writeDataToFile();
       System.out.printf("allocated = %d\n", allocated);
       System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
