@@ -161,21 +161,95 @@ public class Main {
 
   }
 
-  public static ArrayList<Chamber> getCombination(int cnt) {
-    ArrayList<Chamber> res = new ArrayList<Chamber>();
-
-    return res;
+  //точное распределение пустых палат по методу динамического программирования
+  public static Flag[] getFlagsPrecise(Chamber[] arr) {
+    System.out.printf("getFlagsPrecise inc len %d\n", arr.length);
+    //массив вместимостей оставшихся пустых палат
+    int[] caps = Arrays.stream(arr).mapToInt(x -> x.cntOfFree()).toArray();
+    //суммарная вместимость всех пустых палат
+    int totalCap = Arrays.stream(caps).sum();
+    System.out.printf("getFlagsPrecise totalCap=%d\n", totalCap);
+    //массив возможных вариантов размещений количеств от 1 до totalCap
+    Flag[] flags = new Flag[totalCap+1];
+    for (int i=0; i<flags.length; i++) {
+      flags[i] = new Flag();
+    }
+    //максимальное число для перебора комбинаций - 2^(число палат)
+    int maxLimit = (int)Math.pow(2, caps.length);
+    ArrayList<Chamber> lst = new ArrayList<Chamber>();
+    for (int i=1; i<maxLimit; i++) {
+      //накопление суммы
+      int intermediateSum = 0;
+      lst.clear();
+      for (int bit=0; bit<caps.length; bit++)
+        if ((i & 1<<bit) != 0) {
+          intermediateSum += caps[bit];
+          lst.add(arr[bit]);
+        }
+      if (intermediateSum>totalCap || intermediateSum==0)
+        continue;
+      flags[intermediateSum].avail = true;
+      flags[intermediateSum].availChams = lst;
+    }
+    return flags;
   }
 
   //точное распределение пустых палат по методу динамического программирования
-  public static void calcEmptyPrecise(Chamber[] arr) {
-    System.out.printf("calcEmptyPrecise inc len %d\n", arr.length);
-    int[] caps = Arrays.stream(arr).mapToInt(x -> x.cntOfFree()).toArray();
-    int totalCap = Arrays.stream(caps).sum();
-    System.out.printf("calcEmptyPrecise totalCap=%d\n", totalCap);
-    for (Chamber c: arr) {
+  public static void calcEmptyPreciseA(Chamber[] arr) {
+    Flag[] flags = getFlagsPrecise(arr);
+    /*for (int i=1; i< flags.length; i++) {
+      System.out.printf("%d:%s ",i, flags[i].avail ? "Y" : "N");
     }
+    System.out.println();*/
+    //сперва находим оптимальное распределение для больных А
+    //Первый случай, когда число оставшихся больных А заведомо больше, чем число размещений
+    //в таком случае сканируем флаги с наибольшего вниз, как только найдем хотя бы какой-то вариант (наибольший) - используем
+    if (leftA>=flags.length) {
+      for (int i=flags.length; i>=1; i--) {
+        if (i>leftA || !flags[i].avail) {
+          continue;
+        }
+        for (Chamber c: flags[i].availChams) {
+          int aPut = Math.min(leftA, c.cntOfFree());
+          c.a += aPut;
+          leftA -= aPut;
+        }
+        break;
+      }
+    } //первый случай
+    else // leftA<flags.length
+    //второй случай, когда число оставшихся больных А заведомо меньше, чем число размещений
+    //в таком случае сканируем флаги c этого значения вверх, как только найдем хотя бы какой-то вариант (наименьший) - используем
+    {
+      boolean found = false;
+      for (int i=leftA; i<=flags.length; i++) {
+        if (!flags[i].avail) {
+          continue;
+        }
+        for (Chamber c: flags[i].availChams) {
+          int aPut = Math.min(leftA, c.cntOfFree());
+          c.a += aPut;
+          leftA -= aPut;
+        }
+        found = true;
+        break;
+      }
+      //продолжается логика для случая leftA<flags.length, но если мы не нашли сканированием вверх ничего подходящего
+      for (int i=leftA; i>=1; i--) {
+        if (i>leftA || !flags[i].avail) {
+          continue;
+        }
+        for (Chamber c: flags[i].availChams) {
+          int aPut = Math.min(leftA, c.cntOfFree());
+          c.a += aPut;
+          leftA -= aPut;
+        }
+        break;
+      }
+    } //конец логики else leftA<flags.length
+
   }
+
 
 
 
@@ -238,7 +312,9 @@ public class Main {
       calcEmptyGreedy(arrEmpty);
       arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
       printTable("Arr of empty2:", arrEmpty);
-      calcEmptyPrecise(arrEmpty);
+      calcEmptyPreciseA(arrEmpty);
+      arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+      calcEmptyGreedy(arrEmpty);
       allocated = needA+needB-leftB-leftA;
       writeDataToFile();
       System.out.printf("allocated = %d\n", allocated);
