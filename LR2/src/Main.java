@@ -38,7 +38,7 @@ public class Main {
     boolean avail = false;
     ArrayList<Chamber> availChams = new ArrayList<Chamber>();//из каких палат состоит найденное разложение
   }
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
 
   static int p;
   static int needA;
@@ -124,11 +124,11 @@ public class Main {
      System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
   }
 
-  public static void calcEmptyGreedy(Chamber[] arr) {
+  public static void calcEmptyGreedy(Chamber[] arr, boolean checkLast16) {
     //заполнение пустых палат по методу в лоб
     for (int idx=0; idx<arr.length; idx++) {
       //условие прекращения цикла = когда остается менее 16 палат (для точного алгоритма)
-      if (arr.length-idx<=16) {
+      if (checkLast16 && arr.length-idx<=16) {
         System.out.printf("calcEmptyGreedy break on idx=%d of %d\n", idx, arr.length);
         break;
       }
@@ -177,19 +177,22 @@ public class Main {
     //максимальное число для перебора комбинаций - 2^(число палат)
     int maxLimit = (int)Math.pow(2, caps.length);
     ArrayList<Chamber> lst = new ArrayList<Chamber>();
-    for (int i=1; i<maxLimit; i++) {
+    for (int iCombination=1; iCombination<maxLimit; iCombination++) {
       //накопление суммы
       int intermediateSum = 0;
       lst.clear();
-      for (int bit=0; bit<caps.length; bit++)
-        if ((i & 1<<bit) != 0) {
+      for (int bit=0; bit<caps.length; bit++) {
+        int D = 1 << bit;
+        if ((iCombination & D) != 0) {
           intermediateSum += caps[bit];
           lst.add(arr[bit]);
         }
+      }
       if (intermediateSum>totalCap || intermediateSum==0)
         continue;
       flags[intermediateSum].avail = true;
-      flags[intermediateSum].availChams = lst;
+      ArrayList<Chamber> lst4add = new ArrayList<Chamber>(lst);
+      flags[intermediateSum].availChams = lst4add;
     }
     return flags;
   }
@@ -309,12 +312,12 @@ public class Main {
       calcNotEmpty(arrNotEmpty);
       Chamber[] arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
       printTable("Arr of empty1:", arrEmpty);
-      calcEmptyGreedy(arrEmpty);
+      calcEmptyGreedy(arrEmpty, true);
       arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
       printTable("Arr of empty2:", arrEmpty);
       calcEmptyPreciseA(arrEmpty);
       arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
-      calcEmptyGreedy(arrEmpty);
+      calcEmptyGreedy(arrEmpty, false);
       allocated = needA+needB-leftB-leftA;
       writeDataToFile();
       System.out.printf("allocated = %d\n", allocated);
