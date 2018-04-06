@@ -52,7 +52,7 @@ public class Main implements Runnable {
     int cnt = Integer.parseInt(arg);
     for (int i=0; i<cnt; i++) {
       int digit = (int) (Math.random() * 1000000);
-      addValueToBinaryTree(digit, root);
+      addValueToBinaryTree(digit);
     }
   }
 
@@ -76,7 +76,7 @@ public class Main implements Runnable {
       time_parse += l;
       //
       l = System.currentTimeMillis();
-      addValueToBinaryTree(i, root);
+      addValueToBinaryTree(i);
       l = System.currentTimeMillis() - l;
       time_add += l;
     }
@@ -105,6 +105,34 @@ public class Main implements Runnable {
 
   }
 
+  private void addValueToBinaryTree(int x) {
+    if (root == null) {
+      root = new Node(x);
+      return;
+    }
+    Node node = root;
+    while (true) {
+      if (x < node.value) {
+        if (node.left == null) {
+          node.left = new Node(x);
+          return;
+        } else {
+          node = node.left;
+        }
+      } else if (x > node.value) {
+        if (node.right == null) {
+          node.right = new Node(x);
+          return;
+        } else {
+          node = node.right;
+        }
+      } else {
+        return;
+      }
+    }
+  }
+
+  /* Рекурсивный вариант
   private void addValueToBinaryTree(int value, Node node) { //метод добавления вершины в дерево
     if (node==null || root == null) {
       root = new Node(value);
@@ -123,7 +151,7 @@ public class Main implements Runnable {
       else
         node.right = new Node(value);
     }
-  }
+  }*/
 
   //метод поиска вершины по заданному значению
   private NodeTuple findNodeByValue(Node node, Node parent, int value) {
