@@ -1,9 +1,14 @@
-import com.sun.corba.se.impl.oa.poa.POAImpl;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class Main implements Runnable{
+
+  boolean DEBUG = false;
 
   class Point {
     int x;
@@ -67,6 +72,8 @@ public class Main implements Runnable{
   }
 
   public void printMatrCoord(String comment) {
+    if (!DEBUG)
+      return;
     System.out.printf("%s\n--------------\n", comment);
     for (int y=0; y<M; y++) {
       for (int x=0; x<N; x++) {
@@ -80,6 +87,8 @@ public class Main implements Runnable{
   }
 
   public void printMatrStep(String comment) {
+    if (!DEBUG)
+      return;
     System.out.printf("%s\n--------------\n", comment);
     for (int y=0; y<M; y++) {
       for (int x=0; x<N; x++) {
@@ -91,91 +100,68 @@ public class Main implements Runnable{
     }
   }
 
-  public Point getLeft(Point p) {
-    if (p.x == 0) {
-      return null;
-    }
-    else {
-      return Matr[p.y][p.x-1];
-    }
+  public ArrayList<Point> getNeibourhoods(Point p) {
+    ArrayList<Point> res = new ArrayList<Point>();
+    if (p.x > 0)
+      res.add(Matr[p.y][p.x - 1]);
+    if (p.y > 0)
+      res.add(Matr[p.y - 1][p.x]);
+    if (p.x < N - 1)
+      res.add(Matr[p.y][p.x + 1]);
+    if (p.y < M - 1)
+      res.add(Matr[p.y + 1][p.x]);
+    return res;
   }
 
-  public Point getUp(Point p) {
-    if (p.y == 0) {
-      return null;
-    }
-    else {
-      return Matr[p.y-1][p.x];
-    }
-  }
-
-  public Point getRight(Point p) {
-    if (p.x == N-1) {
-      return null;
-    }
-    else {
-      return Matr[p.y][p.x+1];
-    }
-  }
-
-  public Point getDown(Point p) {
-    if (p.y == M-1) {
-      return null;
-    }
-    else {
-      return Matr[p.y+1][p.x];
-    }
-  }
-
-  public void setStep(Point p, int step, Point from) {
-    if (p != null && p.step==0) {
-      p.step = step + Math.abs(p.alt-from.alt);
-      p.from = from;
-    }
-  }
-
-  public void calc() {
-    int step=1;
-    boolean done = false;
-    pFrom.step=step++;
-    while (!done) {
-      for (int y=0; y<M && !done; y++) {
-        for (int x=0; x<N && !done; x++) {
-          Point p = Matr[y][x];
-          if (p.step != step-1)
-            continue;
-          Point pl = getLeft(p);
-          Point pr = getRight(p);
-          Point pu = getUp(p);
-          Point pd = getDown(p);
-          setStep(pl, step, p);
-          setStep(pd, step, p);
-          setStep(pu, step, p);
-          setStep(pr, step, p);
-          if (pl == pTo || pr == pTo || pu == pTo || pd == pTo) {
-            done = true;
-          }
-        }
-      }
-      step++;
-    }//while
-    if (done) {
-      Point p = pTo;
-      while (p != null) {
-        path.add(0, p);
-        p.inPath = true;
-        p = p.from;
+  //метод прореживает весь имеющийся списко соседей, отбрасывая тех, кто уже ближе и того, откуда мы пришли
+  public ArrayList<Point> calcNeib(ArrayList<Point> lst, Point pOrigin) {
+    ArrayList<Point> res = new ArrayList<Point>();
+    for (Point p: lst) {
+      if (pOrigin.from == p) //наткнулись на точку, из которой мы приходили
+        continue;
+      int newStep = pOrigin.step + K + Math.abs(pOrigin.alt-p.alt);
+      if (p.step==0 || p.step>newStep) {
+        p.from = pOrigin;
+        p.step = newStep;
+        res.add(p);
       }
     }
+    return res;
   }
 
   public void printPath() {
+    if (!DEBUG)
+      return;
     for (int i=0; i<path.size(); i++) {
       System.out.printf("%d)%s %s", path.get(i).step, path.get(i), i<path.size()-1 ? "-> " : "\n");
     }
   }
 
+  private void calc() {
+    LinkedList<Point> queue = new LinkedList<Point>();
+    queue.addLast(pFrom);
+    pFrom.from= pFrom;
+    while (!queue.isEmpty()) {
+      Point p = queue.pop();
+      if (DEBUG)
+        System.out.println(p);
+      ArrayList<Point> neib = getNeibourhoods(p);
+      neib = calcNeib(neib, p);
+      queue.addAll(neib);
+    }
+    //
+    Point p = pTo;
+    while (true) {
+      path.add(0, p);
+      p.inPath = true;
+      if (p.from==p)
+        break;
+      p = p.from;
+    }
+  }
+
   public void writeDataToFile() throws IOException {
+    System.out.printf("Path length = %d\n", pTo.step);
     BufferedWriter out = new BufferedWriter(new FileWriter("out.txt"));
     out.write(Integer.toString(pTo.step));
     out.close();
@@ -185,11 +171,12 @@ public class Main implements Runnable{
   public void run() {
     try {
       readDataFromFile();
+      if (DEBUG)
+        System.out.printf("pFrom: %s pTo: %s\n", pFrom, pTo);
       printMatrCoord("Source matr:");
       calc();
       printMatrStep("Steps:");
       printPath();
-      System.out.printf("pFrom: %s pTo: %s", pFrom, pTo);
       writeDataToFile();
     } catch (IOException e) {
       e.printStackTrace();
