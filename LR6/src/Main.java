@@ -1,8 +1,8 @@
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -41,35 +41,43 @@ public class Main implements Runnable{
   ArrayList<Point> path = new ArrayList<Point>();
 
   public void readDataFromFile() throws IOException {
-    BufferedReader in = new BufferedReader(new FileReader("in.txt"));
-    String s;
-    s = in.readLine();
+    long l = System.currentTimeMillis() ;
+    long ll = System.currentTimeMillis() ;
+    //BufferedReader in = new BufferedReader(new FileReader("in.txt"));
+    //String content = new String ( Files.readAllBytes(Paths.get("in.txt")));
+    LinkedList<String> lst  = new LinkedList<String>(Files.readAllLines(Paths.get("in.txt")));
+    System.out.println(String.format("%d ms ReadDataFromFile (readAllLines)", System.currentTimeMillis() - ll));
+    String s = lst.pop();
     String[] leksArr = s.split(" ");
     N = Integer.parseInt(leksArr[0]);
     M = Integer.parseInt(leksArr[1]);
     Matr = new Point[M][N];
     for (int y=0; y<M; y++) {
       for (int x=0; x<N; x++) {
-        Matr[y][x] = new Point();
-        Matr[y][x].x = x;
-        Matr[y][x].y = y;
+        Matr[y][x] = new Point(x, y, 0);
       }
+      //int finalY = y;
+      //Arrays.parallelSetAll(Matr[y], x -> new Point(x, finalY, 0));
     }
+    System.out.println(String.format("%d ms ReadDataFromFile (Martix init)", System.currentTimeMillis() - ll));
     int cntN = N;
+    ll = System.currentTimeMillis() ;
     while (cntN-- != 0) {
-      s = in.readLine();
+      s = lst.pop();
       leksArr = s.split(" ");
       for (int i=0; i<leksArr.length; i++) {
         Matr[N-cntN-1][i].alt = Integer.parseInt(leksArr[i]);
       }
     }
-    K = Integer.parseInt(in.readLine());
-    s = in.readLine();
+    System.out.println(String.format("%d ms ReadDataFromFile (Parse matrix data)", System.currentTimeMillis() - ll));
+    K = Integer.parseInt(lst.pop());
+    s = lst.pop();
     leksArr = s.split(" ");
     pFrom = Matr[Integer.parseInt(leksArr[1])-1][Integer.parseInt(leksArr[0])-1];
     pTo = Matr[Integer.parseInt(leksArr[3])-1][Integer.parseInt(leksArr[2])-1];
-    in.close();
+    System.out.println(String.format("%d ms TOTAL ReadDataFromFile method\n----------------------", System.currentTimeMillis() - l));
   }
+
 
   public void printMatrCoord(String comment) {
     if (!DEBUG)
@@ -138,6 +146,7 @@ public class Main implements Runnable{
   }
 
   private void calc() {
+    long l = System.currentTimeMillis() ;
     LinkedList<Point> queue = new LinkedList<Point>();
     queue.addLast(pFrom);
     pFrom.from= pFrom;
@@ -158,6 +167,7 @@ public class Main implements Runnable{
         break;
       p = p.from;
     }
+    System.out.println(String.format("%d ms Calc\n----------", System.currentTimeMillis() - l));
   }
 
   public void writeDataToFile() throws IOException {
@@ -169,6 +179,7 @@ public class Main implements Runnable{
 
   @Override
   public void run() {
+    long l = System.currentTimeMillis() ;
     try {
       readDataFromFile();
       if (DEBUG)
@@ -181,6 +192,7 @@ public class Main implements Runnable{
     } catch (IOException e) {
       e.printStackTrace();
     }
+    System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
   }
 
   public static void main(String[] args)  {
