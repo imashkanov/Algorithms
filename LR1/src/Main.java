@@ -57,6 +57,7 @@ public class Main implements Runnable {
   }
 
   private void readDataFromFile() throws IOException {
+    long ll = System.currentTimeMillis();
     long time_read=0;
     long time_parse=0;
     long time_add=0;
@@ -81,7 +82,8 @@ public class Main implements Runnable {
       time_add += l;
     }
     in.close();
-    System.out.printf("read %d ms\nparse %d ms\nadd %d ms\n", time_read, time_parse, time_add);
+    System.out.printf("--read %d ms\n--parse %d ms\n--add %d ms\n", time_read, time_parse, time_add);
+    System.out.println(String.format("%d ms readDataFromFile()\n----------", System.currentTimeMillis() - ll));
   }
 
   private int heightOfTree(Node node) { //рекурсивный метод, возвращающий для данной вершины её высоту
@@ -102,7 +104,14 @@ public class Main implements Runnable {
        rightHeight = -1;
     int res = leftHeight > rightHeight ? leftHeight : rightHeight;
     return res+1;
+  }
 
+  private int calcHeight(Node node) {
+    if (node != null) {
+      return Math.max(calcHeight(node.left), calcHeight(node.right)) + 1;
+    } else {
+      return -1;
+    }
   }
 
   private void addValueToBinaryTree(int x) {
@@ -327,11 +336,13 @@ public class Main implements Runnable {
       System.out.println("sout error");
       System.exit(2);
     }
-    System.out.println(String.format("%d ms load", System.currentTimeMillis() - l));
     lst = new ArrayList<Node>();
     directLeftBypassTreeWithCalc(root);
+    long ll = System.currentTimeMillis() ;
     root.leftHeight = heightOfTree(root.left);
     root.rightHeight= heightOfTree(root.right);
+    System.out.println(String.format("%d ms heightOfTree", System.currentTimeMillis() - ll));
+    ll = System.currentTimeMillis() ;
     int val = valueOfNeededNode();
     //int val = 20;
     if (val != 0) {
@@ -340,11 +351,11 @@ public class Main implements Runnable {
         deleteNode(node);
       }
     }
+    System.out.println(String.format("%d ms deleteNode", System.currentTimeMillis() - ll));
     lst = new ArrayList<Node>();
     directLeftBypassTree(root);
-    System.out.println(String.format("%d ms bypass", System.currentTimeMillis() - l));
     writeDataToFile(true, lst);
-    System.out.println(String.format("%d ms end", System.currentTimeMillis() - l));
+    System.out.println(String.format("%d ms TOTAL PROGRAM", System.currentTimeMillis() - l));
   }
 
 
