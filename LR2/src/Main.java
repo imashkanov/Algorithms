@@ -35,8 +35,21 @@ public class Main {
 
   //класс - флаг доступности разложения по данному количеству свободных мест
   static class Flag {
-    boolean avail = false;
+    int value;
     ArrayList<Chamber> availChams = new ArrayList<Chamber>();//из каких палат состоит найденное разложение
+
+    Flag() {}
+
+    Flag(int value, ArrayList<Chamber> availChams) {
+      this.value = value;
+      this.availChams = availChams;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("[#%d::%d] ", value, availChams.size());
+    }
+
   }
 
   private static final boolean DEBUG = false;
@@ -123,7 +136,7 @@ public class Main {
     }
   }
 
-  public static void calcEmptyGreedy() {
+/*  public static void calcEmptyGreedy() {
     //заполнение пустых палат
     for (Chamber c : arr) {
       if (c.getTypeOfFlu() != Chamber.typeOfFlu.ANY) {
@@ -156,106 +169,93 @@ public class Main {
     printTable("After allocation:");
     if (DEBUG)
       System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
-  }
+  }*/
 
-  public static Flag[] getFlagsPrecise(Chamber[] arr) {
-    System.out.printf("getFlagsPrecise inc len %d\n", arr.length);
+  public static ArrayList<Flag> getFlagsPrecise(Chamber[] chambers) {
+    System.out.printf("getFlagsPrecise inc len %d\n", chambers.length);
     //массив вместимостей оставшихся пустых палат
-    int[] caps = Arrays.stream(arr).mapToInt(x -> x.cntOfFree()).toArray();
+    int[] caps = Arrays.stream(chambers).mapToInt(x -> x.cntOfFree()).toArray();
     //суммарная вместимость всех пустых палат
     int totalCap = Arrays.stream(caps).sum();
     System.out.printf("getFlagsPrecise totalCap=%d\n", totalCap);
     //массив возможных вариантов размещений количеств от 1 до totalCap
-    Flag[] flags = new Flag[totalCap+1];
-    for (int i=0; i<flags.length; i++) {
-      flags[i] = new Flag();
+    ArrayList<Flag> flags = new ArrayList<Flag>();
+    if (caps.length == 0) {
+      return flags;
     }
-    //максимальное число для перебора комбинаций - 2^(число палат)
-    int maxLimit = (int)Math.pow(2, caps.length);
-    ArrayList<Chamber> lst = new ArrayList<Chamber>();
-    for (int iCombination=1; iCombination<maxLimit; iCombination++) {
-      //накопление суммы
-      int intermediateSum = 0;
-      lst.clear();
-      for (int bit=0; bit<caps.length; bit++) {
-        int D = 1 << bit;
-        if ((iCombination & D) != 0) {
-          intermediateSum += caps[bit];
-          lst.add(arr[bit]);
-        }
+    flags.add(new Flag());//добавляем 0, который всегда можем получить
+    for (int idxCap=0; idxCap<caps.length; idxCap++) {
+      int cap = caps[idxCap];
+      int[] values = flags.stream().mapToInt(x -> x.value).toArray();
+      int[] values2 = new int[values.length];
+      Arrays.fill(values2, cap);
+      //всегда добавляем размещение одной палаты
+      Chamber newChamber = chambers[idxCap];
+      flags.add(new Flag(cap,new ArrayList<Chamber>(Arrays.asList(newChamber))));
+      for (int i=0; i<values.length; i++) {
+        values2[i] += values[i];
       }
-      if (intermediateSum>totalCap || intermediateSum==0)
-        continue;
-      flags[intermediateSum].avail = true;
-      ArrayList<Chamber> lst4add = new ArrayList<Chamber>(lst);
-      flags[intermediateSum].availChams = lst4add;
+      //добавляем во флаги те значения, которых ещё не было
+      for (int j=0; j<values2.length; j++) {
+        int v = values2[j];
+        if (flags.stream().anyMatch(x -> x.value == v))
+          continue;
+        Flag f = new Flag();
+        f.value = v;
+        f.availChams.addAll(flags.get(j).availChams);
+        f.availChams.add(newChamber);
+        flags.add(f);
+      }
     }
+    flags.sort(new Comparator<Flag>() {
+      @Override
+      public int compare(Flag f1, Flag f2) {
+        return Integer.compare(f1.value, f2.value);
+      }
+    });
     return flags;
   }
 
 
 
-  public static void calcPrecise() {
+  public static void calcEmpty() {
     if (arr.length == 0) return;
-    Flag[] flags = getFlagsPrecise(arr);
-    /*for (int i=1; i< flags.length; i++) {
-      System.out.printf("%d:%s ",i, flags[i].avail ? "Y" : "N");
+    ArrayList<Flag> flags = getFlagsPrecise(arr);
+    //размещаем тип А
+    for (int i=flags.size()-1; i>0; i--) {
+      Flag f = flags.get(i);
+      if (f.value>leftA)
+        continue;
+      for (Chamber c: f.availChams) {
+        int aPut = Math.min(leftA, c.cntOfFree());
+        c.a += aPut;
+        leftA -= aPut;
+      }
+      f.value = -1;
+      f.availChams = new ArrayList<Chamber>();
+      break;
+    }
+    //размещаем тип B
+    flags = getFlagsPrecise(arr);
+    for (int i=flags.size()-1; i>0; i--) {
+      Flag f = flags.get(i);
+      if (f.value>leftB)
+        continue;
+      for (Chamber c: f.availChams) {
+        int bPut = Math.min(leftB, c.cntOfFree());
+        c.b += bPut;
+        leftB -= bPut;
+      }
+      f.value = -1;
+      f.availChams = new ArrayList<Chamber>();
+      break;
+    }
+    /* Диагностический вывод полученного списка флагов
+    for (int i=1; i< flags.size(); i++) {
+      System.out.printf("%d:%s ",flags.get(i).value, flags.get(i).availChams);
     }
     System.out.println();*/
-    //сперва находим оптимальное распределение для больных А
-    //Первый случай, когда число оставшихся больных А заведомо больше, чем число размещений
-    //в таком случае сканируем флаги с наибольшего вниз, как только найдем хотя бы какой-то вариант (наибольший) - используем
-    if (leftA>=flags.length) {
-      for (int i=flags.length; i>=1; i--) {
-        if (i>leftA || !flags[i].avail) {
-          continue;
-        }
-        for (Chamber c: flags[i].availChams) {
-          int aPut = Math.min(leftA, c.cntOfFree());
-          c.a += aPut;
-          leftA -= aPut;
-        }
-        break;
-      }
-    } //первый случай
-    else // leftA<flags.length
-    //второй случай, когда число оставшихся больных А заведомо меньше, чем число размещений
-    //в таком случае сканируем флаги c этого значения вверх, как только найдем хотя бы какой-то вариант (наименьший) - используем
-    {
-      boolean found = false;
-      for (int i=leftA; i<=flags.length; i++) {
-        if (!flags[i].avail) {
-          continue;
-        }
-        for (Chamber c: flags[i].availChams) {
-          int aPut = Math.min(leftA, c.cntOfFree());
-          c.a += aPut;
-          leftA -= aPut;
-        }
-        found = true;
-        break;
-      }
-      //продолжается логика для случая leftA<flags.length, но если мы не нашли сканированием вверх ничего подходящего
-      for (int i=leftA; i>=1; i--) {
-        if (i>leftA || !flags[i].avail) {
-          continue;
-        }
-        for (Chamber c: flags[i].availChams) {
-          int aPut = Math.min(leftA, c.cntOfFree());
-          c.a += aPut;
-          leftA -= aPut;
-        }
-        break;
-      }
-    }
   }
-
-  public static boolean areAllChamsEmpty() {
-    int totalCntOfFree = Arrays.stream(arr).mapToInt(x -> x.cntOfFree()).sum();
-    int totalCap = Arrays.stream(arr).mapToInt(x -> x.n).sum();
-    return totalCap == totalCntOfFree;
-  }
-
 
   public static void printTable(String caption) {
     if (!DEBUG)
@@ -308,14 +308,9 @@ public class Main {
       printTable("Source data:");
       sort();
       calcNotEmpty();
-      if (areAllChamsEmpty() && arr.length<=10) {
-        calcPrecise();
-        calcEmptyGreedy();
-      } else {
-        calcEmptyGreedy();
-      }
-      writeDataToFile();
+      calcEmpty();
       allocated = needA+needB-leftB-leftA;
+      writeDataToFile();
       printTable("After allocation:");
       if (DEBUG)
         System.out.printf("leftA=%d, leftB=%d\n", leftA, leftB);
@@ -324,4 +319,5 @@ public class Main {
       e.printStackTrace();
     }
   }
+
 }
