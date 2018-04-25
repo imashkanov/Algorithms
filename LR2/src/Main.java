@@ -172,12 +172,14 @@ public class Main {
   }*/
 
   public static ArrayList<Flag> getFlagsPrecise(Chamber[] chambers) {
-    System.out.printf("getFlagsPrecise inc len %d\n", chambers.length);
+    if (DEBUG)
+      System.out.printf("getFlagsPrecise inc len %d\n", chambers.length);
     //массив вместимостей оставшихся пустых палат
     int[] caps = Arrays.stream(chambers).mapToInt(x -> x.cntOfFree()).toArray();
     //суммарная вместимость всех пустых палат
     int totalCap = Arrays.stream(caps).sum();
-    System.out.printf("getFlagsPrecise totalCap=%d\n", totalCap);
+    if (DEBUG)
+      System.out.printf("getFlagsPrecise totalCap=%d\n", totalCap);
     //массив возможных вариантов размещений количеств от 1 до totalCap
     ArrayList<Flag> flags = new ArrayList<Flag>();
     if (caps.length == 0) {
@@ -191,15 +193,15 @@ public class Main {
       Arrays.fill(values2, cap);
       //всегда добавляем размещение одной палаты
       Chamber newChamber = chambers[idxCap];
-      flags.add(new Flag(cap,new ArrayList<Chamber>(Arrays.asList(newChamber))));
+      //flags.add(new Flag(cap,new ArrayList<Chamber>(Arrays.asList(newChamber))));
       for (int i=0; i<values.length; i++) {
         values2[i] += values[i];
       }
       //добавляем во флаги те значения, которых ещё не было
-      for (int j=0; j<values2.length; j++) {
+      for (int j=values2.length-1; j<values2.length; j++) {
         int v = values2[j];
-        if (flags.stream().anyMatch(x -> x.value == v))
-          continue;
+        //if (flags.stream().anyMatch(x -> x.value == v))
+        //  continue;
         Flag f = new Flag();
         f.value = v;
         f.availChams.addAll(flags.get(j).availChams);
@@ -218,13 +220,14 @@ public class Main {
 
 
 
-  public static void calcEmpty() {
+  public static void calcEmptyA() {
     if (arr.length == 0) return;
-    ArrayList<Flag> flags = getFlagsPrecise(arr);
+    Chamber[] arrEmpty = Arrays.stream(arr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+    ArrayList<Flag> flags = getFlagsPrecise(arrEmpty);
     //размещаем тип А
     for (int i=flags.size()-1; i>0; i--) {
       Flag f = flags.get(i);
-      if (f.value>leftA)
+      if (f.value>leftA && flags.get(i-1).value>0)
         continue;
       for (Chamber c: f.availChams) {
         int aPut = Math.min(leftA, c.cntOfFree());
@@ -235,11 +238,21 @@ public class Main {
       f.availChams = new ArrayList<Chamber>();
       break;
     }
+
+    /* Диагностический вывод полученного списка флагов
+    for (int i=1; i< flags.size(); i++) {
+      System.out.printf("%d:%s ",flags.get(i).value, flags.get(i).availChams);
+    }
+    System.out.println();*/
+  }
+
+  public static void calcEmptyB() {
     //размещаем тип B
-    flags = getFlagsPrecise(arr);
+    Chamber[] arrEmpty = Arrays.stream(arr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+    ArrayList<Flag> flags = getFlagsPrecise(arrEmpty);
     for (int i=flags.size()-1; i>0; i--) {
       Flag f = flags.get(i);
-      if (f.value>leftB)
+      if (f.value>leftB && flags.get(i-1).value>0)
         continue;
       for (Chamber c: f.availChams) {
         int bPut = Math.min(leftB, c.cntOfFree());
@@ -250,11 +263,6 @@ public class Main {
       f.availChams = new ArrayList<Chamber>();
       break;
     }
-    /* Диагностический вывод полученного списка флагов
-    for (int i=1; i< flags.size(); i++) {
-      System.out.printf("%d:%s ",flags.get(i).value, flags.get(i).availChams);
-    }
-    System.out.println();*/
   }
 
   public static void printTable(String caption) {
@@ -308,7 +316,14 @@ public class Main {
       printTable("Source data:");
       sort();
       calcNotEmpty();
-      calcEmpty();
+      if (leftA >= leftB) {
+        calcEmptyA();
+        calcEmptyB();
+      } else {
+        calcEmptyB();
+        calcEmptyA();
+      }
+
       allocated = needA+needB-leftB-leftA;
       writeDataToFile();
       printTable("After allocation:");
