@@ -8,14 +8,14 @@ import java.util.LinkedList;
 
 public class Main implements Runnable{
 
-  boolean DEBUG = false;
+  boolean DEBUG = true;
 
   class Point {
     int x;
     int y;
     int alt;
     Point from;
-    int step;
+    int distance;
     boolean inPath;
 
     Point() {}
@@ -101,7 +101,7 @@ public class Main implements Runnable{
     for (int y=0; y<M; y++) {
       for (int x=0; x<N; x++) {
         Point p = Matr[y][x];
-        String s = String.format(p.inPath ? "%-2d● " : "%-3d ", p.step);
+        String s = String.format(p.inPath ? "%-2d● " : "%-3d ", p.distance);
         System.out.print(s);
       }
       System.out.println();
@@ -127,10 +127,10 @@ public class Main implements Runnable{
     for (Point p: lst) {
       if (pOrigin.from == p) //наткнулись на точку, из которой мы приходили
         continue;
-      int newStep = pOrigin.step + K + Math.abs(pOrigin.alt-p.alt);
-      if (p.step==0 || p.step>newStep) {
+      int newDistance = pOrigin.distance + K + Math.abs(pOrigin.alt-p.alt);
+      if (p.distance ==0 || p.distance >newDistance) {
         p.from = pOrigin;
-        p.step = newStep;
+        p.distance = newDistance;
         res.add(p);
       }
     }
@@ -141,13 +141,15 @@ public class Main implements Runnable{
     if (!DEBUG)
       return;
     for (int i=0; i<path.size(); i++) {
-      System.out.printf("%d)%s %s", path.get(i).step, path.get(i), i<path.size()-1 ? "-> " : "\n");
+      System.out.printf("%d)%s %s", path.get(i).distance, path.get(i), i<path.size()-1 ? "-> " : "\n");
     }
   }
 
   private void calc() {
     long l = System.currentTimeMillis() ;
     LinkedList<Point> queue = new LinkedList<Point>();
+    //идея в том, формируется очередь узлов графа на обработку. Обрабатываемый узел берется и удаляется из головы
+    //очереди, а его необработанные соседи добавляются в конец очереди
     queue.addLast(pFrom);
     pFrom.from= pFrom;
     while (!queue.isEmpty()) {
@@ -158,7 +160,7 @@ public class Main implements Runnable{
       neib = calcNeib(neib, p);
       queue.addAll(neib);
     }
-    //
+    //формирование пути, начинаем с pTo
     Point p = pTo;
     while (true) {
       path.add(0, p);
@@ -171,9 +173,9 @@ public class Main implements Runnable{
   }
 
   public void writeDataToFile() throws IOException {
-    System.out.printf("Path length = %d\n", pTo.step);
+    System.out.printf("Path length = %d\n", pTo.distance);
     BufferedWriter out = new BufferedWriter(new FileWriter("out.txt"));
-    out.write(Integer.toString(pTo.step));
+    out.write(Integer.toString(pTo.distance));
     out.close();
   }
 
