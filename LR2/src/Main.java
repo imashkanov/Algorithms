@@ -57,7 +57,7 @@ public class Main {
   static int p;
   static int needA;
   static int needB;
-  static Chamber[] arr;
+  static Chamber[] mArr;
   static int leftA;
   static int leftB;
   static int allocated;
@@ -67,9 +67,9 @@ public class Main {
     needA = Integer.parseInt(in.readLine());
     needB = Integer.parseInt(in.readLine());
     p = Integer.parseInt(in.readLine());
-    arr = new Chamber[p];
+    mArr = new Chamber[p];
     for (int i=0; i<p; i++) {
-      arr[i] = new Chamber();
+      mArr[i] = new Chamber();
     }
     String s;
     int idx = 0;
@@ -78,10 +78,10 @@ public class Main {
       int cap = Integer.parseInt(leksArr[0]);
       int a = Integer.parseInt(leksArr[1]);
       int b = Integer.parseInt(leksArr[2]);
-      arr[idx].a = a;
-      arr[idx].b = b;
-      arr[idx].n = cap;
-      arr[idx].num = idx+1;
+      mArr[idx].a = a;
+      mArr[idx].b = b;
+      mArr[idx].n = cap;
+      mArr[idx].num = idx+1;
       idx++;
       if (idx== p+1)
         break;
@@ -90,7 +90,7 @@ public class Main {
   }
 
   public  static  void  sort() {
-    Arrays.sort(arr, new Comparator<Chamber>() {
+    Arrays.sort(mArr, new Comparator<Chamber>() {
       @Override
       public int compare(Chamber c1, Chamber c2) {
         int cnt1 = c1.cntOfFree();
@@ -107,7 +107,7 @@ public class Main {
     leftB = needB;
 
     //заполнение непустых палат
-    for (Chamber c : arr) {
+    for (Chamber c : mArr) {
       if (c.getTypeOfFlu() == Chamber.typeOfFlu.ANY) {
         continue;
       }
@@ -138,7 +138,7 @@ public class Main {
 
 /*  public static void calcEmptyGreedy() {
     //заполнение пустых палат
-    for (Chamber c : arr) {
+    for (Chamber c : mArr) {
       if (c.getTypeOfFlu() != Chamber.typeOfFlu.ANY) {
         continue;
       }
@@ -198,10 +198,10 @@ public class Main {
         values2[i] += values[i];
       }
       //добавляем во флаги те значения, которых ещё не было
-      for (int j=values2.length-1; j<values2.length; j++) {
+      for (int j=0; j<values2.length; j++) {
         int v = values2[j];
-        //if (flags.stream().anyMatch(x -> x.value == v))
-        //  continue;
+        if (Arrays.binarySearch(values, v)>=0)
+          continue;
         Flag f = new Flag();
         f.value = v;
         f.availChams.addAll(flags.get(j).availChams);
@@ -221,8 +221,8 @@ public class Main {
 
 
   public static void calcEmptyA() {
-    if (arr.length == 0) return;
-    Chamber[] arrEmpty = Arrays.stream(arr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+    if (mArr.length == 0) return;
+    Chamber[] arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
     ArrayList<Flag> flags = getFlagsPrecise(arrEmpty);
     //размещаем тип А
     for (int i=flags.size()-1; i>0; i--) {
@@ -248,7 +248,7 @@ public class Main {
 
   public static void calcEmptyB() {
     //размещаем тип B
-    Chamber[] arrEmpty = Arrays.stream(arr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+    Chamber[] arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
     ArrayList<Flag> flags = getFlagsPrecise(arrEmpty);
     for (int i=flags.size()-1; i>0; i--) {
       Flag f = flags.get(i);
@@ -265,13 +265,51 @@ public class Main {
     }
   }
 
+  public static void calcEmptyGreedy() {
+    Chamber[] arrEmpty = Arrays.stream(mArr).filter(x -> (x.getTypeOfFlu() == Chamber.typeOfFlu.ANY)).toArray(Chamber[]::new);
+    if (arrEmpty.length == 0) return;
+    //заполнение пустых палат по методу в лоб
+    for (int idx=0; idx<arrEmpty.length; idx++) {
+      //условие прекращения цикла = когда остается менее 8 палат (для точного алгоритма)
+      if (arrEmpty.length-idx<=100) {
+        System.out.printf("calcEmptyGreedy break on idx=%d of %d\n", idx, arrEmpty.length);
+        break;
+      }
+      Chamber c = arrEmpty[idx];
+      //размещаем в пустую палату тип А
+      if (leftA > leftB) {
+        if (c.cntOfFree() > 0) {
+          int aPut = Math.min(leftA, c.cntOfFree());
+          c.a += aPut;
+          leftA -= aPut;
+          if (DEBUG)
+            System.out.printf("*%d* A=>%d (%d)\n", c.num, aPut, leftA);
+          continue;
+        }
+      } else {
+        //иначе размещаем в пустую палату тип В
+        if (c.cntOfFree() > 0) {
+          int bPut = Math.min(leftB, c.cntOfFree());
+          c.b += bPut;
+          leftB -= bPut;
+          if (DEBUG)
+            System.out.printf("*%d* B=>%d (%d)\n", c.num, bPut, leftB);
+          continue;
+        }
+      }
+    } //for
+
+  }
+
+
+
   public static void printTable(String caption) {
     if (!DEBUG)
       return;
     System.out.println();
     System.out.println(caption);
     System.out.println("----------");
-    for(Chamber c: arr) {
+    for(Chamber c: mArr) {
       System.out.printf("%s\n", c);
     }
   }
@@ -298,7 +336,7 @@ public class Main {
 
   //сортировка по номеру палаты
   public static Chamber[] sortFilteredArrByCap() {
-    Chamber[] res = Arrays.stream(arr).filter(x -> (x.a !=0)).toArray(Chamber[]::new);
+    Chamber[] res = Arrays.stream(mArr).filter(x -> (x.a !=0)).toArray(Chamber[]::new);
     Arrays.sort(res, new Comparator<Chamber>() {
       @Override
       public int compare(Chamber o1, Chamber o2) {
@@ -316,6 +354,7 @@ public class Main {
       printTable("Source data:");
       sort();
       calcNotEmpty();
+      calcEmptyGreedy();
       if (leftA >= leftB) {
         calcEmptyA();
         calcEmptyB();
