@@ -301,8 +301,6 @@ public class Main {
 
   }
 
-
-
   public static void printTable(String caption) {
     if (!DEBUG)
       return;

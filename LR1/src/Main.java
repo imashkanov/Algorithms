@@ -323,7 +323,6 @@ public class Main implements Runnable {
 
   public static void main(String[] args)  {
     Thread t1 = new Thread(null, new Main(), "",2  * 1024 * 1024);
-    t1.setPriority(10);
     t1.start();
   }
 
@@ -357,7 +356,5 @@ public class Main implements Runnable {
     writeDataToFile(true, lst);
     System.out.println(String.format("%d ms TOTAL PROGRAM", System.currentTimeMillis() - l));
   }
-
-
 }
 
