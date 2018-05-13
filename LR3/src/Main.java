@@ -1,16 +1,21 @@
 import java.io.*;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class Main {
 
   static int N; //размерность массива
   static int nMax = 0; //найденная максимальная длина набора
   static int[] inputArr; //исходный набор
+  static boolean hasZero = false; //если встречались нули, то нужно будет есделать результату +1
+  static HashMap<Integer, Integer> cache = new HashMap<Integer, Integer>();
 
   public static void readDataFromFile() throws IOException {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
     N = Integer.parseInt(in.readLine());
     inputArr = new int[N];
+    if (N==0)
+      return;
     String s = in.readLine();
     String[] leksArr = s.split(" ");
     for (int i=0; i<N; i++) {
@@ -20,44 +25,41 @@ public class Main {
     inputArr = Arrays.stream(inputArr).sorted().toArray();
   }
 
-  public static void calc() {
-    if (N==1) {
-      nMax = 1;
-      return;
-    }
-    //сканирование всего массива слева направо с затиранием нулями того, что мы обработали
-    //0 - зарезервированное число, на него нельзя делить
-    for (int i=0; i<N; i++) {
-      System.out.println();
-      int val = inputArr[i];
-      System.out.printf("%d", val);
-      if (val==0)
+  //рекурсивный метод поиска длинцы цепочки делителей
+  public static int calcLen(int idx) {
+    int val = inputArr[idx]; //делимое, с которым мы работаем
+    int cl = 1; //начальная длина цепочки
+    for (int i=idx-1; i>=0; i--) {
+      int d = inputArr[i];
+      if (d==0)
         continue;
-      int n = 1; //число найденных делимых в данной итерации
-      int notnull = 0;
-      for (int j=i+1; j<N; j++) {
-        int d = inputArr[j];
-        if (d!=0)
-          notnull++;
-        if (d==0 || d % val !=0)
-          continue;
-        n++;
-        val = d;
-        System.out.printf("-%d", val);
-        inputArr[j] = 0;
-      }
-      if (n>nMax)
-        nMax = n;
-      if (notnull==0) //чисел не осталось, там все занулено
-        break;
-      //проверяем, если у нас текущее число единица. то повторяем цикл пока все не занулим. Она будет абсолютно во всех цепочках
-      if (inputArr[i]==1) {
-        i--; //чтобы вернуться вновь на тот же индекс средствами цикла
+      if (val % d != 0)
         continue;
-      }
+      cl += calcLen(i);
+      break;
     }
-    System.out.println("\n-------");
+    return  cl;
   }
+
+  public static void calc() {
+    //внешний цикл чтобы добраться до всех элементов
+    for (int i=inputArr.length-1; i>=0; i--) {
+      int val = inputArr[i];
+      if (val == 0) {
+        hasZero = true; //хотя бы раз встретили 0
+        continue;
+      }
+      if (cache.containsKey(i))  //уэе есть рассчитанное значение в кеше
+        continue;
+      int chainLen = calcLen(i);
+      nMax = Math.max(nMax, chainLen); //высчитываем новую максимальную длину цепочки
+      cache.put(i, chainLen);
+    }
+    if (hasZero) {
+      nMax++; //если были нули, то мы всегда можем ноль подель на эту цепочку 1 раз (в начале)
+    }
+  }
+
 
   public static void writeDataToFile() throws IOException {
     BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
