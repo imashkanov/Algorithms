@@ -43,16 +43,22 @@ public class Main {
     set.add(s);
   }*/
 
+  static int _internal_level_calc = 0;
   public static int calc(int n) throws Exception {
+    _internal_level_calc++;
     if (n<3)
       throw new Exception("<3!!!!!!!!!!!!!");
     int res = 0;
     if (cache.containsKey(n)) {
       res = cache.get(n);
-      return res;
+    } else {
+      res = calc(n / 2 + n % 2) + calc(n / 2);
+      cache.put(n, res);
     }
-    res = calc(n/2 + n%2 ) + calc(n/2);
-    cache.put(n, res);
+    for (int idx=0; idx<_internal_level_calc; idx++)
+      System.out.printf(".");
+    System.out.printf("%d->%d\n", n, res);
+    _internal_level_calc--;
     return res;
   }
 
@@ -71,8 +77,8 @@ public class Main {
       //reduce(mArr, 1, 0);
       cache.put(3, 1);
       cache.put(4, 2);
-      cache.put(5, 2);
-      cache.put(6, 2);
+      //cache.put(5, 2);
+      //cache.put(6, 2);
       result = calc(N);
       writeDataToFile();
     } catch (IOException e) {
