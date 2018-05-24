@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 
-public class Main {
+public class Main implements Runnable {
 
   static int N; //размерность массива
   static int nMax = 0; //найденная максимальная длина набора
@@ -27,6 +27,9 @@ public class Main {
 
   //рекурсивный метод поиска длинцы цепочки делителей
   public static int calcLen(int idx) {
+    if (cache.containsKey(idx)) {
+      return cache.get(idx);
+    }
     int val = inputArr[idx]; //делимое, с которым мы работаем
     int cl = 1; //начальная длина цепочки
     for (int i=idx-1; i>=0; i--) {
@@ -35,9 +38,12 @@ public class Main {
         continue;
       if (val % d != 0)
         continue;
-      cl += calcLen(i);
-      break;
+      int c2 = calcLen(i);
+      if ((c2+1) > cl)
+        cl = c2+1;
+      //break;
     }
+    cache.put(idx, cl);
     return  cl;
   }
 
@@ -67,15 +73,21 @@ public class Main {
     writer.close();
   }
 
-  public static void main(String[] args) {
+  @Override
+  public void run() {
+    long l = System.currentTimeMillis();
     try {
       readDataFromFile();
       calc();
       writeDataToFile();
       System.out.println(nMax);
+      System.out.printf("%d ms\n", System.currentTimeMillis()-l);
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
 
+  public static void main(String[] args) {
+    new Thread(null, new Main(), "", 10 * 1024 * 1024).start();
   }
 }
