@@ -1,16 +1,46 @@
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 
 public class Main implements Runnable {
 
-  static int N; //размерность массива
-  static int nMax = 0; //найденная максимальная длина набора
-  static int[] inputArr; //исходный набор
-  static boolean hasZero = false; //если встречались нули, то нужно будет есделать результату +1
-  static HashMap<Integer, Integer> cache = new HashMap<Integer, Integer>();
+  class FastScanner {
+    BufferedReader reader;
+    StringTokenizer tokenizer;
 
-  public static void readDataFromFile() throws IOException {
+    public FastScanner(String fileName) throws IOException {
+      reader = new BufferedReader(new FileReader(fileName));
+    }
+
+    public String next() throws IOException {
+      while (tokenizer == null || !tokenizer.hasMoreTokens()) {
+        String line = reader.readLine();
+        if (line == null) {
+          throw new EOFException();
+        }
+        tokenizer = new StringTokenizer(line);
+      }
+      return tokenizer.nextToken();
+    }
+
+    public int nextInt() throws IOException {
+      return Integer.parseInt(next());
+    }
+  }
+
+  int N; //размерность массива
+  int nMax = 0; //найденная максимальная длина набора
+  int[] inputArr; //исходный набор
+  boolean hasZero = false; //если встречались нули, то нужно будет есделать результату +1
+  HashMap<Integer, Integer> cache = new HashMap<Integer, Integer>();
+/*
+  public void readDataFromFile() throws IOException {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
     N = Integer.parseInt(in.readLine());
     inputArr = new int[N];
@@ -23,10 +53,22 @@ public class Main implements Runnable {
     }
     in.close();
     inputArr = Arrays.stream(inputArr).sorted().toArray();
+  }*/
+
+  public void readDataFromFile() throws IOException {
+    FastScanner fs = new FastScanner("input.txt");
+    N = fs.nextInt();
+    inputArr = new int[N];
+    if (N==0)
+      return;
+    for (int i=0; i<N; i++) {
+      inputArr[i] = fs.nextInt();
+    }
+    inputArr = Arrays.stream(inputArr).sorted().toArray();
   }
 
   //рекурсивный метод поиска длинцы цепочки делителей
-  public static int calcLen(int idx) {
+  public int calcLen(int idx) {
     if (cache.containsKey(idx)) {
       return cache.get(idx);
     }
@@ -47,7 +89,7 @@ public class Main implements Runnable {
     return  cl;
   }
 
-  public static void calc() {
+  public void calc() {
     //внешний цикл чтобы добраться до всех элементов
     for (int i=inputArr.length-1; i>=0; i--) {
       int val = inputArr[i];
@@ -67,7 +109,7 @@ public class Main implements Runnable {
   }
 
 
-  public static void writeDataToFile() throws IOException {
+  public void writeDataToFile() throws IOException {
     BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
     writer.write(Integer.toString(nMax));
     writer.close();
@@ -88,6 +130,6 @@ public class Main implements Runnable {
   }
 
   public static void main(String[] args) {
-    new Thread(null, new Main(), "", 10 * 1024 * 1024).start();
+    new Thread(null, new Main(), "", 2 * 1024 * 1024).start();
   }
 }

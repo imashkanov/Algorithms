@@ -1,152 +1,95 @@
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Scanner;
 
-public class Main {
+public class Main implements Runnable {
 
   static class Officer {
-    int id = -1;
-    int price = 0;
-    int cost = 0;
-    Officer parent;
-    int slavescnt = -1;
-    ArrayList<Officer> slaves;
-
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      int parent_id = parent!=null ? parent.id : -1;
-      sb.append(String.format("ID:%d Price:%d  Parent:%d Slaves:%d  [ ", id, price, parent_id, slavescnt ));
-      for (int i=0; i<slavescnt; i++) {
-        sb.append(String.format("%d ", slaves.get(i).id));
-      }
-      sb.append("]");
-      return sb.toString();
-    }
-
+    long cost; //стоимость
+    int[] children; //массив индексов сыновей
   }
 
-  static int N;
-  static Officer[] mOfficers;
-  static Officer mBestO;
-  static boolean DEBUG = false;
+  static Officer[] arr;
 
-
-  private static void readDataFromFile() throws IOException {
-    BufferedReader in = new BufferedReader(new FileReader("in.txt"));
-    N = Integer.parseInt(in.readLine());
-    mOfficers = new Officer[N+1];
-    String s;
-    for (int i=1; i<=N; i++) {
-      s = in.readLine();
-      int[] leksArr = Arrays.stream(s.split(" ")).mapToInt(x-> Integer.parseInt(x)).toArray();
-      int idx = 0;
-      int officerId = leksArr[idx++];
-      Officer o = getOfficerById(officerId);
-      o.slavescnt = leksArr[idx++];
-      for (int isl=0; isl<o.slavescnt; isl++) {
-        int osl_id = leksArr[idx++];
-        int osl_price = leksArr[idx++];
-        Officer osl = getOfficerById(osl_id);
-        osl.price = osl_price;
-        osl.parent = o;
-        o.slaves.add(osl);
+  private static LinkedList<Long> checkCosts(int idx) { //метод на вход принимает индекс чиновника
+    LinkedList<Long> res = new LinkedList<>();//заготовка под ответ
+    res.addFirst(1000000000000000L);//чтобы любой другой максимум, полученный неискуственно, был меньше
+    LinkedList<Long> temp; //будем получать из каждой подзадачи
+    for (int i : arr[idx].children) {
+      temp = checkCosts(i);
+      if (temp.getFirst() < res.getFirst()) {
+        res = temp;
       }
     }
-    in.close();
+    if (res.getFirst() == 1000000000000000L) { //если больше нет детей
+      res.removeFirst();
+      res.addFirst(arr[idx].cost);
+      res.addLast(Long.valueOf((idx + 1)));//а это мы записываем путь
+    } else {
+      long tempCost = res.removeFirst();//стоимость убираем
+      res.addFirst(Long.valueOf(idx + 1)); //добавляем номер чиновника
+      res.addFirst(tempCost + arr[idx].cost); //высчитываем стоимость полную
+    }
+    return res;
   }
 
-  //создает либо достает чиновника из списка по ID
-  private static Officer getOfficerById(int id) {
-    Officer o = mOfficers[id];
-    if (o==null) {
-      o = new Officer();
-      o.slaves = new ArrayList<Officer>();
-      o.id = id;
-      mOfficers[id] = o;
+  @Override
+  public void run() {
+    Scanner sc = null;
+    try {
+      sc = new Scanner(new File("in.txt"));
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
     }
-    return o;
-  }
+    arr = new Officer[Integer.parseInt(sc.nextLine())];
+    String[] s;
+    for (int i = 0; i < arr.length; i++)
+      arr[i] = new Officer();
+    int current;
 
-  static private void printAllOfficers() {
-    if (!DEBUG)
-      return;
-    System.out.printf("All officers:\n-------------\n");
-    for (int i=1; i<=N; i++) {
-      Officer o = mOfficers[i];
-      System.out.printf("%s\n", o);
-    }
-  }
-
-  private static void printAllCost() {
-    if (!DEBUG)
-      return;
-    System.out.printf("All costs:\n-------------\n");
-    for (int i=1; i<=N; i++) {
-      Officer o = mOfficers[i];
-      System.out.printf("ID:%d Cost:%d\n", o.id, o.cost);
-    }
-    System.out.printf("-------------\nBest officer:\n");
-    System.out.printf("ID:%d Cost:%d\n", mBestO.id, mBestO.cost);
-  }
-
-
-  private static void calc() {
-    if (N == 0) {
-      return;
-    }
-    LinkedList<Officer> queue = new LinkedList<Officer>();
-    queue.add(mOfficers[1]);
-    while (!queue.isEmpty()) {
-      Officer o = queue.pop();
-      int parentCost = o.parent == null ? 0 : o.parent.cost;
-      o.cost = o.price + parentCost;
-      queue.addAll(o.slaves);
-    }
-    //
-    int min_cost = Integer.MAX_VALUE;
-    for (Officer o : mOfficers) {
-      if (o==null)
-        continue;;
-      if (o.slavescnt>0)
-        continue;
-      if (o.cost<min_cost) {
-        min_cost = o.cost;
-        mBestO = o;
+    for (Officer anArr : arr) {
+      current = sc.nextInt() - 1;
+      arr[current].children = new int[sc.nextInt()];
+      for (int j = 0; j < arr[current].children.length; j++) {
+        arr[current].children[j] = sc.nextInt() - 1;
+        arr[arr[current].children[j]].cost = sc.nextInt();
       }
     }
-  }
-
-  private static void writeDataToFile() throws IOException {
-    BufferedWriter writer = new BufferedWriter(new FileWriter("out.txt"));
-    writer.write(String.format("%d\n", mBestO.cost));
-    ArrayList<Integer> arr = new ArrayList<Integer>();
-    Officer o = mBestO;
-    while (o!=null) {
-      arr.add(0, o.id);
-      o = o.parent;
+    FileWriter fw = null;
+    try {
+      fw = new FileWriter("out.txt");
+    } catch (IOException e) {
+      e.printStackTrace();
     }
-    for (int i=0; i<arr.size(); i++) {
-      writer.write(Integer.toString(arr.get(i)));
-      if (i!=arr.size()-1) {
-        writer.write(" ");
+    LinkedList<Long> res = checkCosts(0); // результирующий список,[0]-стоимость, остальные - путь от корня до минимальной вершины
+    int i = 0;
+    for (Long l : res) {
+      if (i == 0) {
+        try {
+          fw.append(l + "\n");
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      } else {
+        try {
+          fw.append(l + " ");
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
+      i++;
     }
-    writer.close();
+    try {
+      fw.flush();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
-
-
-  public static void main(String[] args) throws IOException {
-    readDataFromFile();
-    printAllOfficers();
-    calc();
-    printAllCost();
-    writeDataToFile();
+  public static void main(String[] args) {
+    new Thread(null, new Main(), "", 20 * 1024 * 1024).start();
   }
-
-
-
 }
