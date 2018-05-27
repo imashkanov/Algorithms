@@ -1,11 +1,7 @@
-import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.StringTokenizer;
 
 public class Main implements Runnable {
@@ -14,22 +10,22 @@ public class Main implements Runnable {
     BufferedReader reader;
     StringTokenizer tokenizer;
 
-    public FastScanner(String fileName) throws IOException {
+    public FastScanner(String fileName) throws Exception {
       reader = new BufferedReader(new FileReader(fileName));
     }
 
-    public String next() throws IOException {
+    public String next() throws Exception {
       while (tokenizer == null || !tokenizer.hasMoreTokens()) {
         String line = reader.readLine();
         if (line == null) {
-          throw new EOFException();
+          throw new Exception();
         }
         tokenizer = new StringTokenizer(line);
       }
       return tokenizer.nextToken();
     }
 
-    public int nextInt() throws IOException {
+    public int nextInt() throws Exception {
       return Integer.parseInt(next());
     }
   }
@@ -38,7 +34,7 @@ public class Main implements Runnable {
   int nMax = 0; //найденная максимальная длина набора
   int[] inputArr; //исходный набор
   boolean hasZero = false; //если встречались нули, то нужно будет есделать результату +1
-  HashMap<Integer, Integer> cache = new HashMap<Integer, Integer>();
+  int[] cache;
 /*
   public void readDataFromFile() throws IOException {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
@@ -55,22 +51,27 @@ public class Main implements Runnable {
     inputArr = Arrays.stream(inputArr).sorted().toArray();
   }*/
 
-  public void readDataFromFile() throws IOException {
+  public void readDataFromFile() throws Exception {
     FastScanner fs = new FastScanner("input.txt");
     N = fs.nextInt();
     inputArr = new int[N];
+    cache = new int[N+1];
+    for (int i=0; i< cache.length; i++) {
+      cache[i]=-1;
+    }
     if (N==0)
       return;
     for (int i=0; i<N; i++) {
       inputArr[i] = fs.nextInt();
     }
-    inputArr = Arrays.stream(inputArr).sorted().toArray();
+    Arrays.sort(inputArr);
+//    inputArr = Arrays.stream(inputArr).sorted().toArray();
   }
 
   //рекурсивный метод поиска длинцы цепочки делителей
   public int calcLen(int idx) {
-    if (cache.containsKey(idx)) {
-      return cache.get(idx);
+    if (cache[idx] != -1) {
+      return cache[idx];
     }
     int val = inputArr[idx]; //делимое, с которым мы работаем
     int cl = 1; //начальная длина цепочки
@@ -85,23 +86,23 @@ public class Main implements Runnable {
         cl = c2+1;
       //break;
     }
-    cache.put(idx, cl);
+    cache[idx] = cl;
     return  cl;
   }
 
   public void calc() {
     //внешний цикл чтобы добраться до всех элементов
-    for (int i=inputArr.length-1; i>=0; i--) {
+    for (int i=inputArr.length-1, chainLen; i>=0; i--) {
       int val = inputArr[i];
       if (val == 0) {
         hasZero = true; //хотя бы раз встретили 0
         continue;
       }
-      if (cache.containsKey(i))  //уэе есть рассчитанное значение в кеше
+      if (cache[i] != -1)  //уэе есть рассчитанное значение в кеше
         continue;
-      int chainLen = calcLen(i);
+      chainLen = calcLen(i);
       nMax = Math.max(nMax, chainLen); //высчитываем новую максимальную длину цепочки
-      cache.put(i, chainLen);
+      cache[i] = chainLen;
     }
     if (hasZero) {
       nMax++; //если были нули, то мы всегда можем ноль подель на эту цепочку 1 раз (в начале)
@@ -109,10 +110,10 @@ public class Main implements Runnable {
   }
 
 
-  public void writeDataToFile() throws IOException {
-    BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
+  public void writeDataToFile() throws Exception {
+    FileWriter writer =  new FileWriter("output.txt");
     writer.write(Integer.toString(nMax));
-    writer.close();
+    writer.flush();
   }
 
   @Override
@@ -124,7 +125,7 @@ public class Main implements Runnable {
       writeDataToFile();
       System.out.println(nMax);
       System.out.printf("%d ms\n", System.currentTimeMillis()-l);
-    } catch (IOException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
