@@ -9,7 +9,7 @@ public class Main {
   static int NM; //результирующая размерность
   static int[][] matrOfSec; //массивы исходный последовательностей
   static int[] resSec;  //результирующий массив
-  static boolean DEBUG = true;
+  static boolean DEBUG = false;
 
   public static void readDataFromFile() throws IOException {
     BufferedReader in = new BufferedReader(new FileReader("input.txt"));
@@ -52,7 +52,7 @@ public class Main {
       return;
     System.out.println("Result of merge:");
     System.out.printf("NM=%d\n", NM);
-    for (int n=0;n<NM; n++) {
+    for (int n=0;n<resSec.length; n++) {
       System.out.printf("%d ", resSec[n]);
     }
     System.out.println();
@@ -61,7 +61,7 @@ public class Main {
 
   private static void WriteDataToFile() throws IOException {
     BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
-    for (int n=0;n<NM; n++) {
+    for (int n=0;n<resSec.length; n++) {
       writer.write(Integer.toString(resSec[n]));
       if (n!=NM-1) {
         writer.write(" ");
@@ -71,7 +71,7 @@ public class Main {
   }
 
 
-  private static void merge() {
+  /*private static void merge() {
     int[] idx = new int[N]; //массив динамических индексов цикла для всех N послед., как будто N переменных цикла
     long l = System.currentTimeMillis() ;
     for (int i=0; i<NM; i++) { //большой полный цикл по результирующему массиву
@@ -97,23 +97,62 @@ public class Main {
       }
 
     }
-  }
+  }*/
 
   private static void merge2() {
     int i = 0;
     for (int n = 0; n < N; n++) {
       System.arraycopy(matrOfSec[n], 0, resSec, i, M);
-      i+=M;
+      i += M;
     }
     resSec = Arrays.stream(resSec).sorted().toArray();
   }
 
-    public static void main(String[] args) {
+
+  private static void merge3() {
+    int n = N;
+    int m = M;
+    int[][] newMatr;
+    int[] oddAuxArr = N%2==0 ? new int[0] : matrOfSec[N-1];
+    while (n>1) {
+      n = n/2;
+      m = m*2;
+      newMatr = new int[n][m];
+      for (int i=0; i<n; i++) {
+        newMatr[i] = merge(matrOfSec[i*2], matrOfSec[i*2+1] );
+      }
+      matrOfSec = newMatr;
+    }
+    resSec = new int[m];
+    System.arraycopy(matrOfSec[0], 0, resSec, 0, m);
+    resSec = merge(resSec, oddAuxArr);
+  }
+
+  private static int[] merge(int[] arr_1, int[] arr_2) {
+    int len_1 = arr_1.length, len_2 = arr_2.length;
+    int a = 0, b = 0, len = len_1 + len_2; // a, b - счетчики в массивах
+    int[] result = new int[len];
+    for (int i = 0; i < len; i++) {
+      if (b < len_2 && a < len_1) {
+        if (arr_1[a] > arr_2[b]) result[i] = arr_2[b++];
+        else result[i] = arr_1[a++];
+      } else if (b < len_2) {
+        result[i] = arr_2[b++];
+      } else {
+        result[i] = arr_1[a++];
+      }
+    }
+    return result;
+  }
+
+
+
+  public static void main(String[] args) {
     long l = System.currentTimeMillis() ;
     try {
       readDataFromFile();
       printSrc();
-      merge2();
+      merge3();
       printRes();
       WriteDataToFile();
     } catch (Exception e) {
