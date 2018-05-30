@@ -108,11 +108,15 @@ public class Main {
     resSec = Arrays.stream(resSec).sorted().toArray();
   }
 
-
+/*
   private static void merge3() {
     int n = N;
     int m = M;
     int[][] newMatr;
+    if (N==1) {
+      System.arraycopy(matrOfSec[0], 0, resSec, 0, NM);
+      return;
+    }
     int[] oddAuxArr = N%2==0 ? new int[0] : matrOfSec[N-1];
     while (n>1) {
       n = n/2;
@@ -126,6 +130,37 @@ public class Main {
     resSec = new int[m];
     System.arraycopy(matrOfSec[0], 0, resSec, 0, m);
     resSec = merge(resSec, oddAuxArr);
+  }*/
+/*
+  private static void merge4() {
+    resSec = new int[0];
+    for (int n = 0; n < N; n++) {
+      resSec = merge(resSec, matrOfSec[n]);
+    }
+  }*/
+
+  private static void merge5() {
+    if (N==1) {
+      System.arraycopy(matrOfSec[0], 0, resSec, 0, NM);
+      return;
+    }
+    int n = N;
+    int m = M;
+    int[][] newMatr;
+    while (n>1) {
+      int[] oddAuxArr = n % 2 == 0 ? new int[0] : matrOfSec[n-1]; //учтем если нужно нечетную запись (последнюю)
+      n = n/2;
+      m = m*2;
+      newMatr = new int[n][m];
+      for (int i=0; i<n; i++) {
+        newMatr[i] = merge(matrOfSec[i*2], matrOfSec[i*2+1] );
+      }
+      if (oddAuxArr.length!=0) {
+        newMatr[n-1] = merge(newMatr[n-1], oddAuxArr );
+      }
+      matrOfSec = newMatr;
+    }
+    resSec = matrOfSec[0];
   }
 
   private static int[] merge(int[] arr_1, int[] arr_2) {
@@ -152,7 +187,7 @@ public class Main {
     try {
       readDataFromFile();
       printSrc();
-      merge3();
+      merge5();
       printRes();
       WriteDataToFile();
     } catch (Exception e) {
