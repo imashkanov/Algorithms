@@ -1,6 +1,4 @@
 import java.io.*;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 
 public class Main {
 
@@ -50,7 +48,7 @@ public class Main {
   private static void printRes() {
     if (!DEBUG)
       return;
-    System.out.println("Result of merge:");
+    System.out.println("Result of combine2arrays:");
     System.out.printf("NM=%d\n", NM);
     for (int n=0;n<resSec.length; n++) {
       System.out.printf("%d ", resSec[n]);
@@ -71,7 +69,7 @@ public class Main {
   }
 
 
-  /*private static void merge() {
+  /*private static void combine2arrays() {
     int[] idx = new int[N]; //массив динамических индексов цикла для всех N послед., как будто N переменных цикла
     long l = System.currentTimeMillis() ;
     for (int i=0; i<NM; i++) { //большой полный цикл по результирующему массиву
@@ -99,14 +97,14 @@ public class Main {
     }
   }*/
 
-  private static void merge2() {
+  /*private static void merge2() {
     int i = 0;
     for (int n = 0; n < N; n++) {
       System.arraycopy(matrOfSec[n], 0, resSec, i, M);
       i += M;
     }
     resSec = Arrays.stream(resSec).sorted().toArray();
-  }
+  }*/
 
 /*
   private static void merge3() {
@@ -123,19 +121,19 @@ public class Main {
       m = m*2;
       newMatr = new int[n][m];
       for (int i=0; i<n; i++) {
-        newMatr[i] = merge(matrOfSec[i*2], matrOfSec[i*2+1] );
+        newMatr[i] = combine2arrays(matrOfSec[i*2], matrOfSec[i*2+1] );
       }
       matrOfSec = newMatr;
     }
     resSec = new int[m];
     System.arraycopy(matrOfSec[0], 0, resSec, 0, m);
-    resSec = merge(resSec, oddAuxArr);
+    resSec = combine2arrays(resSec, oddAuxArr);
   }*/
 /*
   private static void merge4() {
     resSec = new int[0];
     for (int n = 0; n < N; n++) {
-      resSec = merge(resSec, matrOfSec[n]);
+      resSec = combine2arrays(resSec, matrOfSec[n]);
     }
   }*/
 
@@ -153,31 +151,37 @@ public class Main {
       m = m*2;
       newMatr = new int[n][m];
       for (int i=0; i<n; i++) {
-        newMatr[i] = merge(matrOfSec[i*2], matrOfSec[i*2+1] );
+        newMatr[i] = combine2arrays(matrOfSec[i*2], matrOfSec[i*2+1] );
       }
       if (oddAuxArr.length!=0) {
-        newMatr[n-1] = merge(newMatr[n-1], oddAuxArr );
+        newMatr[n-1] = combine2arrays(newMatr[n-1], oddAuxArr );
       }
       matrOfSec = newMatr;
     }
     resSec = matrOfSec[0];
   }
 
-  private static int[] merge(int[] arr_1, int[] arr_2) {
-    int len_1 = arr_1.length, len_2 = arr_2.length;
-    int a = 0, b = 0, len = len_1 + len_2; // a, b - счетчики в массивах
-    int[] result = new int[len];
-    for (int i = 0; i < len; i++) {
-      if (b < len_2 && a < len_1) {
-        if (arr_1[a] > arr_2[b]) result[i] = arr_2[b++];
-        else result[i] = arr_1[a++];
-      } else if (b < len_2) {
-        result[i] = arr_2[b++];
-      } else {
-        result[i] = arr_1[a++];
+  private static int[] combine2arrays(int[] src1, int[] src2) {
+    int len1 = src1.length;
+    int len2 = src2.length;
+    int idx1 = 0;
+    int idx2 = 0;
+    int lenNew = len1 + len2;
+    int[] res = new int[lenNew];
+    for (int i = 0; i < lenNew; i++) {
+      if (idx2 < len2 && idx1 < len1) { //еще оба массива не достигли конца
+        if (src1[idx1] > src2[idx2])
+          res[i] = src2[idx2++];
+        else
+          res[i] = src1[idx1++];
+      } else { //один из массивов уже полностью выбран
+        if (idx2 < len2)  //еще остались элементы в src2
+          res[i] = src2[idx2++]; //однозначно берем только из src2
+        else
+          res[i] = src1[idx1++]; //иначе из src1
       }
     }
-    return result;
+    return res;
   }
 
 
